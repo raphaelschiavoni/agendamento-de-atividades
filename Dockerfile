@@ -37,15 +37,21 @@ COPY --from=build /app/node_modules ./node_modules
 # Server: código-fonte (para os scripts tsx), build compilado e migrações.
 COPY --from=build /app/server ./server
 
-# Front-end já buildado, servido pelo próprio server em produção.
+# Front-end já buildado (servido pelo server) + manifesto do workspace client
+# (para que `npm run ... -w server` funcione com o workspace íntegro).
 COPY --from=build /app/client/dist ./client/dist
+COPY --from=build /app/client/package.json ./client/package.json
+
+# Script de inicialização (espera o banco, migra, popula, cria admin, sobe o server).
+COPY docker-entrypoint.sh ./docker-entrypoint.sh
+RUN chmod +x ./docker-entrypoint.sh
 
 # Porta padrão da API/site (ajustável via variável PORT).
 EXPOSE 4000
 
 # Healthcheck simples usado pelo orquestrador.
-HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=5 \
   CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||4000)+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
-# Sobe a API (que também serve o front-end estático).
-CMD ["node", "server/dist/index.js"]
+# Migra/popula/cria-admin e então sobe a API (que também serve o front estático).
+CMD ["sh", "docker-entrypoint.sh"]

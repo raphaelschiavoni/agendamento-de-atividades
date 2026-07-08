@@ -31,11 +31,15 @@ export async function getAdminUserById(id: string): Promise<AdminUser | null> {
   return rows[0] ?? null;
 }
 
-export async function createAdminUser(email: string, password: string, name: string): Promise<AdminUser> {
+/** Cria o admin se ainda não existir. Idempotente: retorna null se o email já existe
+ *  (não sobrescreve a senha de um admin já cadastrado). */
+export async function createAdminUser(email: string, password: string, name: string): Promise<AdminUser | null> {
   const passwordHash = await hashPassword(password);
   const { rows } = await pool.query<AdminUser>(
-    "INSERT INTO admin_users (email, password_hash, name) VALUES ($1,$2,$3) RETURNING id, email, name, role",
+    `INSERT INTO admin_users (email, password_hash, name) VALUES ($1,$2,$3)
+     ON CONFLICT (email) DO NOTHING
+     RETURNING id, email, name, role`,
     [email.toLowerCase(), passwordHash, name]
   );
-  return rows[0];
+  return rows[0] ?? null;
 }

@@ -12,13 +12,23 @@ function parseArgs() {
 }
 
 async function main() {
-  const { email, password, name } = parseArgs();
-  if (!email || !password || !name) {
-    console.error('Uso: npm run create-admin -- --email="admin@exemplo.com" --password="senha" --name="Nome"');
+  const args = parseArgs();
+  // Aceita via argumentos (CLI) ou variáveis de ambiente (deploy automático).
+  const email = args.email ?? process.env.ADMIN_EMAIL;
+  const password = args.password ?? process.env.ADMIN_PASSWORD;
+  const name = args.name ?? process.env.ADMIN_NAME ?? "Administrador";
+
+  if (!email || !password) {
+    console.error(
+      'Informe as credenciais via argumentos ou variáveis de ambiente.\n' +
+        'CLI: npm run create-admin -- --email="admin@exemplo.com" --password="senha" --name="Nome"\n' +
+        'ENV: ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_NAME'
+    );
     process.exit(1);
   }
   const user = await createAdminUser(email, password, name);
-  console.log("Admin criado:", user);
+  if (user) console.log("Admin criado:", user);
+  else console.log(`Admin '${email}' já existe — nenhuma alteração.`);
   await pool.end();
 }
 
