@@ -93,7 +93,7 @@ export function CheckoutView({
           className="w-full rounded-md py-2.5 text-sm"
           style={{ background: valid ? "var(--forest)" : "#ccc", color: "var(--paper)" }}
         >
-          {total === 0 ? "Confirmar reserva" : "Pagar com Pix"}
+          Revisar reserva
         </button>
       </div>
     </div>

@@ -6,15 +6,17 @@ import { BackRow } from "../../components/BackRow";
 import { FloatingCartButton } from "../../components/FloatingCartButton";
 import { HotelPicker } from "./HotelPicker";
 import { CategoryPicker } from "./CategoryPicker";
+import { PassaporteBar } from "./PassaporteBar";
 import { ActivityCard } from "./ActivityCard";
 import { ScheduleModal } from "./ScheduleModal";
 import { CartView } from "./CartView";
 import { CheckoutView } from "./CheckoutView";
+import { RevisaoView } from "./RevisaoView";
 import { PaymentView } from "./PaymentView";
 import { ConfirmationView } from "./ConfirmationView";
 import type { Activity, Booking, CartItem, Category, Customer } from "../../types";
 
-type Stage = "browse" | "cart" | "checkout" | "payment" | "done";
+type Stage = "browse" | "cart" | "checkout" | "revisao" | "payment" | "done";
 
 export function ClienteApp() {
   const [hotelId, setHotelId] = useState<string | null>(null);
@@ -73,7 +75,8 @@ export function ClienteApp() {
   const isGuestCategory = cart.some((i) => i.category === "hospede" || i.category === "passaporte");
   const isPassaporte = cart.some((i) => i.category === "passaporte");
 
-  async function createPixCharge() {
+  // Cria a cobrança e, conforme o total, vai para o Pix ou confirma direto (incluso).
+  async function confirmarReserva() {
     const result = await createCharge(
       cart.map((i) => ({
         activityId: i.activityId,
@@ -90,9 +93,15 @@ export function ClienteApp() {
         roomNumber: isGuestCategory && roomNumber ? roomNumber : undefined,
       }
     );
-    setChargeId(result.chargeId);
-    setPixCode(result.pixCopyPaste);
-    setStage("payment");
+    if (cartTotal > 0) {
+      setChargeId(result.chargeId);
+      setPixCode(result.pixCopyPaste);
+      setStage("payment");
+    } else {
+      const { bookings } = await simulateApprove(result.chargeId);
+      setPaidVouchers(bookings);
+      setStage("done");
+    }
   }
 
   async function confirmPayment() {
@@ -112,6 +121,7 @@ export function ClienteApp() {
     setPaidVouchers([]);
     setStage("browse");
     setHotelId(null);
+    setCategory("hospede");
   }
 
   if (stage === "cart") {
@@ -137,7 +147,25 @@ export function ClienteApp() {
           roomNumber={roomNumber}
           setRoomNumber={setRoomNumber}
           onBack={() => setStage("cart")}
-          onNext={createPixCharge}
+          onNext={() => setStage("revisao")}
+        />
+      </div>
+    );
+  }
+  if (stage === "revisao") {
+    return (
+      <div className="p-5 max-w-3xl mx-auto">
+        <RevisaoView
+          cart={cart}
+          customer={customer}
+          hotels={hotels}
+          isGuest={isGuestCategory}
+          isPassaporte={isPassaporte}
+          guestHotelId={guestHotelId}
+          roomNumber={roomNumber}
+          total={cartTotal}
+          onBack={() => setStage("checkout")}
+          onConfirm={confirmarReserva}
         />
       </div>
     );
@@ -145,7 +173,7 @@ export function ClienteApp() {
   if (stage === "payment") {
     return (
       <div className="p-5 max-w-3xl mx-auto">
-        <PaymentView total={cartTotal} pixCode={pixCode} onBack={() => setStage("checkout")} onConfirm={confirmPayment} />
+        <PaymentView total={cartTotal} pixCode={pixCode} onBack={() => setStage("revisao")} onConfirm={confirmPayment} />
       </div>
     );
   }
@@ -179,6 +207,19 @@ export function ClienteApp() {
       <div className="my-4">
         <CategoryPicker category={category} setCategory={setCategory} />
       </div>
+
+      {category === "passaporte" && (
+        <PassaporteBar
+          hotels={hotels}
+          activityHotelId={hotelId}
+          onPickActivityHotel={setHotelId}
+          guestHotelId={guestHotelId}
+          setGuestHotelId={setGuestHotelId}
+          roomNumber={roomNumber}
+          setRoomNumber={setRoomNumber}
+        />
+      )}
+
       <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))" }}>
         {activitiesLoading && <p className="text-sm opacity-60">Carregando atividades…</p>}
         {activitiesError && <p className="text-sm" style={{ color: "var(--danger)" }}>Não foi possível carregar as atividades.</p>}
