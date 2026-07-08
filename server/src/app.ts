@@ -14,6 +14,7 @@ import { activitiesRouter, adminActivitiesRouter } from "./modules/activities/ac
 import { authRouter } from "./modules/auth/auth.routes.js";
 import { checkoutRouter, vouchersRouter, adminBookingsRouter } from "./modules/bookings/bookings.routes.js";
 import { adminDashboardRouter } from "./modules/dashboard/dashboard.routes.js";
+import { adminAnalyticsRouter } from "./modules/analytics/analytics.routes.js";
 import { adminWhatsappLogRouter } from "./modules/notifications/whatsapp-log.routes.js";
 import { adminUploadsRouter } from "./modules/uploads/uploads.routes.js";
 
@@ -66,6 +67,7 @@ export function createApp() {
   app.use("/api/admin/activities", adminActivitiesRouter);
   app.use("/api/admin/bookings", adminBookingsRouter);
   app.use("/api/admin/dashboard", adminDashboardRouter);
+  app.use("/api/admin/analytics", adminAnalyticsRouter);
   app.use("/api/admin/whatsapp-log", adminWhatsappLogRouter);
   app.use("/api/admin/uploads", adminUploadsRouter);
 
