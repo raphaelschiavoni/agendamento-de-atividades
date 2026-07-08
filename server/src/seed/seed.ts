@@ -38,6 +38,17 @@ interface SeedData {
 }
 
 async function main() {
+  // IMPORTANTE: só popula quando o catálogo está vazio. Se já existem atividades,
+  // o seed é ignorado para NUNCA sobrescrever edições feitas no painel (fotos,
+  // preços, etiquetas etc.). Passe SEED_FORCE=1 para forçar (uso manual apenas).
+  const { rows } = await pool.query<{ n: string }>("SELECT COUNT(*) AS n FROM activities");
+  const existentes = Number(rows[0].n);
+  if (existentes > 0 && process.env.SEED_FORCE !== "1") {
+    console.log(`Catálogo já possui ${existentes} atividades — seed ignorado (edições preservadas).`);
+    await pool.end();
+    return;
+  }
+
   const raw = readFileSync(path.join(__dirname, "dados-reais-hoteis.json"), "utf-8");
   const data: SeedData = JSON.parse(raw);
 
