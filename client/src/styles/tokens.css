@@ -1,0 +1,21 @@
+:root {
+  --forest: #1E3324;
+  --forest-light: #2E4A34;
+  --moss: #587D4C;
+  --moss-light: #E8EEE1;
+  --clay: #C1723C;
+  --clay-light: #F3E2D2;
+  --gold: #D9A441;
+  --gold-light: #F8EDD4;
+  --plum: #6B4E8E;
+  --plum-light: #ECE5F3;
+  --sand: #F1E6D2;
+  --cream: #F7F0E1;
+  --paper: #FFFCF6;
+  --bark: #2A2118;
+  --line: #E4D7BE;
+  --danger: #A83F2C;
+}
+
+.rs-display { font-family: 'Fraunces', Georgia, serif; }
+.rs-body { font-family: 'Work Sans', system-ui, sans-serif; }

@@ -1,0 +1,96 @@
+import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Search, Trash2 } from "lucide-react";
+import { listHotelsAdmin } from "../../api/hotels";
+import { cancelBookingAdmin, listBookingsAdmin, markUsedAdmin, type ListBookingsFilters } from "../../api/bookings";
+import { StatusBadge } from "../../components/StatusBadge";
+import { CATEGORY_META } from "../../lib/constants";
+import { formatBRL } from "../../lib/format";
+
+export function VendasTab() {
+  const [filterHotel, setFilterHotel] = useState("all");
+  const [filterStatus, setFilterStatus] = useState<ListBookingsFilters["status"]>("all");
+  const [search, setSearch] = useState("");
+  const queryClient = useQueryClient();
+
+  const { data: hotels = [] } = useQuery({ queryKey: ["hotels-admin"], queryFn: listHotelsAdmin });
+  const { data: bookings = [] } = useQuery({
+    queryKey: ["bookings-admin", filterHotel, filterStatus, search],
+    queryFn: () => listBookingsAdmin({ hotelId: filterHotel, status: filterStatus, search }),
+  });
+
+  const markUsedMutation = useMutation({
+    mutationFn: markUsedAdmin,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["bookings-admin"] }),
+  });
+  const cancelMutation = useMutation({
+    mutationFn: cancelBookingAdmin,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["bookings-admin"] }),
+  });
+
+  return (
+    <div>
+      <div className="flex flex-wrap gap-2 mb-4">
+        <select value={filterHotel} onChange={(e) => setFilterHotel(e.target.value)} className="rounded-md px-2 py-1.5 text-sm" style={{ border: "1px solid var(--line)" }}>
+          <option value="all">Todos os hotéis</option>
+          {hotels.map((h) => <option key={h.id} value={h.id}>{h.name}</option>)}
+        </select>
+        <select
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value as ListBookingsFilters["status"])}
+          className="rounded-md px-2 py-1.5 text-sm"
+          style={{ border: "1px solid var(--line)" }}
+        >
+          <option value="all">Todos os status</option>
+          <option value="pendente-uso">Aguardando uso</option>
+          <option value="utilizado">Utilizado</option>
+          <option value="cancelado">Cancelado</option>
+        </select>
+        <div className="flex items-center gap-1.5 rounded-md px-2 py-1.5" style={{ border: "1px solid var(--line)" }}>
+          <Search size={14} className="opacity-50" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar nome, telefone ou voucher"
+            className="text-sm outline-none"
+            style={{ background: "transparent" }}
+          />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        {bookings.map((b) => (
+          <div key={b.id} className="rounded-lg p-3 flex items-center justify-between flex-wrap gap-2" style={{ background: "var(--paper)", border: "1px solid var(--line)" }}>
+            <div>
+              <div className="text-sm font-medium flex items-center gap-2" style={{ color: "var(--forest)" }}>
+                {b.activityName}
+                <span className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: "var(--gold-light)", color: "var(--gold)" }}>{b.voucherCode}</span>
+              </div>
+              <div className="text-xs opacity-60">
+                {b.hotelName} · {b.date} às {b.time} · {b.qty} pessoa(s) · {CATEGORY_META[b.category].label} · {b.customer?.name} ({b.customer?.phone})
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">{formatBRL(b.total)}</span>
+              <StatusBadge booking={b} />
+              {b.status !== "cancelado" && !b.used && (
+                <button onClick={() => markUsedMutation.mutate(b.id)} className="px-2 py-1 rounded-md text-xs" style={{ background: "var(--moss)", color: "#fff" }}>
+                  Marcar utilizado
+                </button>
+              )}
+              {b.status !== "cancelado" && (
+                <button
+                  onClick={() => { if (confirm("Cancelar este voucher?")) cancelMutation.mutate(b.id); }}
+                  className="p-1.5 rounded-md" style={{ border: "1px solid var(--line)" }}
+                >
+                  <Trash2 size={13} color="var(--danger)" />
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
+        {bookings.length === 0 && <p className="text-sm opacity-60">Nenhuma venda encontrada com esses filtros.</p>}
+      </div>
+    </div>
+  );
+}

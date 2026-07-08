@@ -1,0 +1,877 @@
+{
+  "hotels": [
+    {
+      "id": "h1",
+      "name": "Campo dos Sonhos",
+      "city": "Socorro, SP",
+      "address": "Estrada dos Sonhos, km 6 — Bairro das Lavras de Baixo",
+      "waNumber": "551938953161",
+      "email": "atendimento@campodossonhos.com.br",
+      "photo": ""
+    },
+    {
+      "id": "h2",
+      "name": "Parque dos Sonhos",
+      "city": "Socorro, SP",
+      "address": "Estrada da Varginha, Km 07, s/n",
+      "waNumber": "5519981815870",
+      "email": "marketing@parquedossonhos.com.br",
+      "photo": ""
+    },
+    {
+      "id": "h3",
+      "name": "Terra dos Sonhos",
+      "city": "Socorro, SP",
+      "address": "Rod. José Vicente Lomônico, s/n",
+      "waNumber": "5519999305375",
+      "email": "marketing@terradossonhos.com.br",
+      "photo": ""
+    },
+    {
+      "id": "h4",
+      "name": "Colina dos Sonhos",
+      "city": "Socorro, SP",
+      "address": "Estr. do Serrote, km 12, s/n",
+      "waNumber": "5519996521740",
+      "email": "marketing@colinadossonhos.com.br",
+      "photo": ""
+    },
+    {
+      "id": "h5",
+      "name": "Portal dos Sonhos",
+      "city": "Socorro, SP",
+      "address": "A definir",
+      "waNumber": "5519999990005",
+      "email": "marketing@portaldossonhos.com.br",
+      "photo": ""
+    }
+  ],
+  "activities": [
+    {
+      "id": "a001",
+      "hotelId": "h1",
+      "name": "Arvorismo + Tirolesa do Campo",
+      "description": "Aventure-se na copa das árvores. Atividade realizada ao nível das copas, a cerca de 13m de altura.",
+      "durationMin": 60,
+      "capacity": 12,
+      "times": [
+        "09:00",
+        "11:00",
+        "14:00",
+        "16:00"
+      ],
+      "active": true,
+      "days": [],
+      "photo": "",
+      "tags": [
+        "Intermediário",
+        "Aventura",
+        "Tirolesa"
+      ],
+      "prices": {
+        "hospede": 0,
+        "visitante": 60,
+        "dayuse": 45,
+        "passaporte": 0
+      }
+    },
+    {
+      "id": "a002",
+      "hotelId": "h1",
+      "name": "Passeio a Cavalo pelo Campo",
+      "description": "Trilhas para cavalgada nas dependências do hotel, para um passeio calmo e tranquilo.",
+      "durationMin": 15,
+      "capacity": 8,
+      "times": [
+        "09:30",
+        "11:00",
+        "15:00",
+        "16:30"
+      ],
+      "active": true,
+      "days": [],
+      "photo": "",
+      "tags": [
+        "Fácil",
+        "A partir de 3 anos",
+        "Acessível"
+      ],
+      "prices": {
+        "hospede": 0,
+        "visitante": 40,
+        "dayuse": 30,
+        "passaporte": 20
+      }
+    },
+    {
+      "id": "a003",
+      "hotelId": "h1",
+      "name": "Passeio de Trator",
+      "description": "Experiência inesquecível de integração com a natureza, a bordo do trator do hotel.",
+      "durationMin": 25,
+      "capacity": 20,
+      "times": [
+        "10:00",
+        "14:30",
+        "16:00"
+      ],
+      "active": true,
+      "days": [],
+      "photo": "",
+      "tags": [
+        "Fácil",
+        "A partir de 1 ano",
+        "Acessível"
+      ],
+      "prices": {
+        "hospede": 0,
+        "visitante": 25,
+        "dayuse": 15,
+        "passaporte": 0
+      }
+    },
+    {
+      "id": "a004",
+      "hotelId": "h1",
+      "name": "Arvorismo Kids + Tirolesa",
+      "description": "Aventura entre as árvores pensada para as crianças, com total segurança.",
+      "durationMin": 60,
+      "capacity": 10,
+      "times": [
+        "09:00",
+        "11:00",
+        "14:00"
+      ],
+      "active": true,
+      "days": [],
+      "photo": "",
+      "tags": [
+        "Intermediário",
+        "Arvorismo",
+        "Kids"
+      ],
+      "prices": {
+        "hospede": 0,
+        "visitante": 45,
+        "dayuse": 35,
+        "passaporte": 0
+      }
+    },
+    {
+      "id": "a005",
+      "hotelId": "h1",
+      "name": "Tirolesa do Campo",
+      "description": "Tirolesa de 90 metros de extensão, partindo de 10 metros de altura.",
+      "durationMin": 20,
+      "capacity": 12,
+      "times": [
+        "09:30",
+        "11:30",
+        "14:30",
+        "16:30"
+      ],
+      "active": true,
+      "days": [],
+      "photo": "",
+      "tags": [
+        "Aventura"
+      ],
+      "prices": {
+        "hospede": 0,
+        "visitante": 40,
+        "dayuse": 30,
+        "passaporte": 0
+      }
+    },
+    {
+      "id": "a006",
+      "hotelId": "h1",
+      "name": "Pedalinho Cisne ou Caravela",
+      "description": "Passeio mágico de pedalinho pet-friendly, ideal para famílias.",
+      "durationMin": 30,
+      "capacity": 16,
+      "times": [
+        "10:00",
+        "13:00",
+        "15:00"
+      ],
+      "active": true,
+      "days": [],
+      "photo": "",
+      "tags": [
+        "Pet-friendly",
+        "Famílias"
+      ],
+      "prices": {
+        "hospede": 0,
+        "visitante": 20,
+        "dayuse": 20,
+        "passaporte": 0
+      }
+    },
+    {
+      "id": "a007",
+      "hotelId": "h1",
+      "name": "Tour pela Fazendinha (ordenha)",
+      "description": "Alimente os animais e participe da ordenha da vaca em um tour guiado.",
+      "durationMin": 80,
+      "capacity": 20,
+      "times": [
+        "10:00",
+        "16:00"
+      ],
+      "active": true,
+      "days": [],
+      "photo": "",
+      "tags": [
+        "Fácil",
+        "Acessível",
+        "Pet-friendly"
+      ],
+      "prices": {
+        "hospede": 0,
+        "visitante": 25,
+        "dayuse": 15,
+        "passaporte": 0
+      }
+    },
+    {
+      "id": "a008",
+      "hotelId": "h1",
+      "name": "Caminhada do Descobrimento",
+      "description": "Caminhada autoguiada por trilhas acessíveis, ideal para famílias.",
+      "durationMin": 90,
+      "capacity": 25,
+      "times": [
+        "08:30",
+        "15:00"
+      ],
+      "active": true,
+      "days": [],
+      "photo": "",
+      "tags": [
+        "Fácil",
+        "Acessível",
+        "Natureza"
+      ],
+      "prices": {
+        "hospede": 0,
+        "visitante": 20,
+        "dayuse": 10,
+        "passaporte": 0
+      }
+    },
+    {
+      "id": "a009",
+      "hotelId": "h1",
+      "name": "Conhecendo o Apiário",
+      "description": "Descubra o mundo das abelhas em uma visita guiada ao apiário do hotel.",
+      "durationMin": 75,
+      "capacity": 15,
+      "times": [
+        "09:30",
+        "14:30"
+      ],
+      "active": true,
+      "days": [],
+      "photo": "",
+      "tags": [
+        "Fácil",
+        "Famílias"
+      ],
+      "prices": {
+        "hospede": 0,
+        "visitante": 25,
+        "dayuse": 15,
+        "passaporte": 0
+      }
+    },
+    {
+      "id": "a010",
+      "hotelId": "h1",
+      "name": "Festa Caipira e Roda Sertaneja",
+      "description": "Noite de festa caipira com música ao vivo e diversão para toda a família.",
+      "durationMin": 120,
+      "capacity": 60,
+      "times": [
+        "20:00"
+      ],
+      "active": true,
+      "days": [],
+      "photo": "",
+      "tags": [
+        "Música ao vivo",
+        "Famílias"
+      ],
+      "prices": {
+        "hospede": 0,
+        "visitante": 30,
+        "dayuse": 0,
+        "passaporte": 0
+      }
+    },
+    {
+      "id": "a011",
+      "hotelId": "h2",
+      "name": "Tirolesa Voadora",
+      "description": "Uma das atividades mais procuradas do parque, com aproximadamente 60 minutos de experiência.",
+      "durationMin": 60,
+      "capacity": 10,
+      "times": [
+        "09:00",
+        "11:00",
+        "14:00",
+        "16:00"
+      ],
+      "active": true,
+      "days": [],
+      "photo": "",
+      "tags": [
+        "Aventura",
+        "Adrenalina"
+      ],
+      "prices": {
+        "hospede": 0,
+        "visitante": 70,
+        "dayuse": 55,
+        "passaporte": 0
+      }
+    },
+    {
+      "id": "a012",
+      "hotelId": "h2",
+      "name": "City Tour",
+      "description": "Passeio turístico acessível, ideal para famílias e pet-friendly.",
+      "durationMin": 90,
+      "capacity": 15,
+      "times": [
+        "09:00",
+        "14:00"
+      ],
+      "active": true,
+      "days": [],
+      "photo": "",
+      "tags": [
+        "Acessível",
+        "Famílias",
+        "Pet-friendly"
+      ],
+      "prices": {
+        "hospede": 30,
+        "visitante": 30,
+        "dayuse": 30,
+        "passaporte": 30
+      }
+    },
+    {
+      "id": "a013",
+      "hotelId": "h2",
+      "name": "Arvorismo",
+      "description": "Circuito de arvorismo com nível fácil, em meio à natureza.",
+      "durationMin": 30,
+      "capacity": 12,
+      "times": [
+        "09:30",
+        "11:30",
+        "14:30",
+        "16:30"
+      ],
+      "active": true,
+      "days": [],
+      "photo": "",
+      "tags": [
+        "Fácil",
+        "Aventura",
+        "Natureza"
+      ],
+      "prices": {
+        "hospede": 0,
+        "visitante": 50,
+        "dayuse": 40,
+        "passaporte": 0
+      }
+    },
+    {
+      "id": "a014",
+      "hotelId": "h2",
+      "name": "Arvorismo + Rapel da Gruta",
+      "description": "Circuito completo de arvorismo com rapel na gruta, com guia.",
+      "durationMin": 60,
+      "capacity": 8,
+      "times": [
+        "09:00",
+        "14:00"
+      ],
+      "active": true,
+      "days": [],
+      "photo": "",
+      "tags": [
+        "Fácil",
+        "Adrenalina",
+        "Com guia"
+      ],
+      "prices": {
+        "hospede": 0,
+        "visitante": 65,
+        "dayuse": 50,
+        "passaporte": 0
+      }
+    },
+    {
+      "id": "a015",
+      "hotelId": "h2",
+      "name": "Escalada Kids + Tirolesa",
+      "description": "Escalada e tirolesa para crianças a partir de 3 anos.",
+      "durationMin": 5,
+      "capacity": 10,
+      "times": [
+        "10:00",
+        "11:00",
+        "15:00",
+        "16:00"
+      ],
+      "active": true,
+      "days": [],
+      "photo": "",
+      "tags": [
+        "Fácil",
+        "A partir de 3 anos",
+        "Kids"
+      ],
+      "prices": {
+        "hospede": 0,
+        "visitante": 35,
+        "dayuse": 25,
+        "passaporte": 0
+      }
+    },
+    {
+      "id": "a016",
+      "hotelId": "h2",
+      "name": "Passeio a Cavalo da Fazenda",
+      "description": "Passeio a cavalo acessível, a partir de 7 anos.",
+      "durationMin": 60,
+      "capacity": 8,
+      "times": [
+        "08:30",
+        "15:30"
+      ],
+      "active": true,
+      "days": [],
+      "photo": "",
+      "tags": [
+        "A partir de 7 anos",
+        "Acessível"
+      ],
+      "prices": {
+        "hospede": 0,
+        "visitante": 55,
+        "dayuse": 45,
+        "passaporte": 20
+      }
+    },
+    {
+      "id": "a017",
+      "hotelId": "h2",
+      "name": "Rapel da Gruta",
+      "description": "Rapel de nível intermediário na gruta, a partir de 7 anos.",
+      "durationMin": 30,
+      "capacity": 8,
+      "times": [
+        "09:30",
+        "11:30",
+        "14:30"
+      ],
+      "active": true,
+      "days": [],
+      "photo": "",
+      "tags": [
+        "Intermediário",
+        "Aventura"
+      ],
+      "prices": {
+        "hospede": 0,
+        "visitante": 50,
+        "dayuse": 40,
+        "passaporte": 0
+      }
+    },
+    {
+      "id": "a018",
+      "hotelId": "h2",
+      "name": "Circuito Radical de Tirolesas",
+      "description": "Circuito com várias tirolesas, acessível, de aproximadamente 1h30.",
+      "durationMin": 90,
+      "capacity": 10,
+      "times": [
+        "09:00",
+        "14:00"
+      ],
+      "active": true,
+      "days": [],
+      "photo": "",
+      "tags": [
+        "Fácil",
+        "Adrenalina",
+        "Acessível"
+      ],
+      "prices": {
+        "hospede": 0,
+        "visitante": 75,
+        "dayuse": 60,
+        "passaporte": 0
+      }
+    },
+    {
+      "id": "a019",
+      "hotelId": "h2",
+      "name": "Boia Cross / Flutuação",
+      "description": "Descida de flutuação na água, a partir de 5 anos.",
+      "durationMin": 60,
+      "capacity": 10,
+      "times": [
+        "10:00",
+        "15:00"
+      ],
+      "active": true,
+      "days": [],
+      "photo": "",
+      "tags": [
+        "Fácil",
+        "A partir de 5 anos"
+      ],
+      "prices": {
+        "hospede": 0,
+        "visitante": 55,
+        "dayuse": 45,
+        "passaporte": 0
+      }
+    },
+    {
+      "id": "a020",
+      "hotelId": "h2",
+      "name": "Roça Tour (Fora de Estrada)",
+      "description": "Passeio de trator fora de estrada, a partir de 2 anos.",
+      "durationMin": 60,
+      "capacity": 20,
+      "times": [
+        "10:00",
+        "16:00"
+      ],
+      "active": true,
+      "days": [],
+      "photo": "",
+      "tags": [
+        "A partir de 2 anos",
+        "Famílias"
+      ],
+      "prices": {
+        "hospede": 0,
+        "visitante": 30,
+        "dayuse": 20,
+        "passaporte": 0
+      }
+    },
+    {
+      "id": "a021",
+      "hotelId": "h2",
+      "name": "Trilha da Ordenha",
+      "description": "Aventura familiar com interação com animais e leite fresco direto da fonte.",
+      "durationMin": 120,
+      "capacity": 20,
+      "times": [
+        "09:00",
+        "15:00"
+      ],
+      "active": true,
+      "days": [],
+      "photo": "",
+      "tags": [
+        "A pé",
+        "Com guia",
+        "Famílias"
+      ],
+      "prices": {
+        "hospede": 0,
+        "visitante": 30,
+        "dayuse": 20,
+        "passaporte": 0
+      }
+    },
+    {
+      "id": "a022",
+      "hotelId": "h3",
+      "name": "Cerimônia das Garças",
+      "description": "Contemplação guiada da chegada das garças ao entardecer, à beira do rio.",
+      "durationMin": 40,
+      "capacity": 25,
+      "times": [
+        "17:00"
+      ],
+      "active": true,
+      "days": [],
+      "photo": "",
+      "tags": [
+        "Contemplação",
+        "Natureza"
+      ],
+      "prices": {
+        "hospede": 0,
+        "visitante": 30,
+        "dayuse": 20,
+        "passaporte": 0
+      }
+    },
+    {
+      "id": "a023",
+      "hotelId": "h3",
+      "name": "Trilha às Margens do Rio das Antas",
+      "description": "Caminhada tranquila pela margem do rio, ideal para casais e famílias.",
+      "durationMin": 60,
+      "capacity": 20,
+      "times": [
+        "09:00",
+        "16:00"
+      ],
+      "active": true,
+      "days": [],
+      "photo": "",
+      "tags": [
+        "Fácil",
+        "Natureza",
+        "Famílias"
+      ],
+      "prices": {
+        "hospede": 0,
+        "visitante": 25,
+        "dayuse": 15,
+        "passaporte": 0
+      }
+    },
+    {
+      "id": "a024",
+      "hotelId": "h3",
+      "name": "Visita ao Casarão Centenário",
+      "description": "Tour guiado pelo casarão histórico e a memória da fazenda.",
+      "durationMin": 40,
+      "capacity": 20,
+      "times": [
+        "10:00",
+        "14:00"
+      ],
+      "active": true,
+      "days": [],
+      "photo": "",
+      "tags": [
+        "Fácil",
+        "Cultural"
+      ],
+      "prices": {
+        "hospede": 0,
+        "visitante": 20,
+        "dayuse": 10,
+        "passaporte": 0
+      }
+    },
+    {
+      "id": "a025",
+      "hotelId": "h3",
+      "name": "Pesca Contemplativa",
+      "description": "Pesca esportiva com equipamentos fornecidos, prática de soltar o peixe.",
+      "durationMin": 90,
+      "capacity": 6,
+      "times": [
+        "07:00",
+        "16:30"
+      ],
+      "active": true,
+      "days": [],
+      "photo": "",
+      "tags": [
+        "Tranquilo",
+        "Natureza"
+      ],
+      "prices": {
+        "hospede": 0,
+        "visitante": 45,
+        "dayuse": 35,
+        "passaporte": 15
+      }
+    },
+    {
+      "id": "a026",
+      "hotelId": "h4",
+      "name": "Balanço Radical",
+      "description": "Balanço de 14 metros de altura, no ponto mais alto de Socorro, a 1.450m de altitude.",
+      "durationMin": 20,
+      "capacity": 8,
+      "times": [
+        "09:30",
+        "11:30",
+        "14:30",
+        "16:30"
+      ],
+      "active": true,
+      "days": [],
+      "photo": "",
+      "tags": [
+        "Adrenalina",
+        "Vista panorâmica"
+      ],
+      "prices": {
+        "hospede": 0,
+        "visitante": 60,
+        "dayuse": 45,
+        "passaporte": 0
+      }
+    },
+    {
+      "id": "a027",
+      "hotelId": "h4",
+      "name": "Tirolesa da Fazendinha",
+      "description": "250 metros de extensão, chegando ao ponto mais alto, a 35 metros de altura.",
+      "durationMin": 30,
+      "capacity": 10,
+      "times": [
+        "09:00",
+        "11:00",
+        "14:00",
+        "16:00"
+      ],
+      "active": true,
+      "days": [],
+      "photo": "",
+      "tags": [
+        "Adrenalina",
+        "Aventura"
+      ],
+      "prices": {
+        "hospede": 0,
+        "visitante": 55,
+        "dayuse": 40,
+        "passaporte": 0
+      }
+    },
+    {
+      "id": "a028",
+      "hotelId": "h4",
+      "name": "Encontro com as Alpacas",
+      "description": "Interação guiada com o rebanho de alpacas que vivem na fazenda.",
+      "durationMin": 30,
+      "capacity": 20,
+      "times": [
+        "10:00",
+        "15:00"
+      ],
+      "active": true,
+      "days": [],
+      "photo": "",
+      "tags": [
+        "Fácil",
+        "Famílias"
+      ],
+      "prices": {
+        "hospede": 0,
+        "visitante": 25,
+        "dayuse": 15,
+        "passaporte": 0
+      }
+    },
+    {
+      "id": "a029",
+      "hotelId": "h4",
+      "name": "Cicloturismo & Bike Park",
+      "description": "Passeio de bike pela fazenda ou circuito no Bike Park para ciclistas experientes.",
+      "durationMin": 60,
+      "capacity": 12,
+      "times": [
+        "08:30",
+        "14:00"
+      ],
+      "active": true,
+      "days": [],
+      "photo": "",
+      "tags": [
+        "De bicicleta",
+        "Aventura"
+      ],
+      "prices": {
+        "hospede": 0,
+        "visitante": 30,
+        "dayuse": 20,
+        "passaporte": 0
+      }
+    },
+    {
+      "id": "a030",
+      "hotelId": "h4",
+      "name": "Degustação de Vinhos com Sommelier",
+      "description": "Experiência guiada por sommelier, explorando aromas e texturas de vinhos selecionados.",
+      "durationMin": 60,
+      "capacity": 14,
+      "times": [
+        "18:00"
+      ],
+      "active": true,
+      "days": [],
+      "photo": "",
+      "tags": [
+        "Gastronômico",
+        "Adultos"
+      ],
+      "prices": {
+        "hospede": 90,
+        "visitante": 120,
+        "dayuse": 120,
+        "passaporte": 90
+      }
+    },
+    {
+      "id": "a031",
+      "hotelId": "h4",
+      "name": "Cicloturismo pela Fazenda",
+      "description": "Passeio de bike leve pelas trilhas da fazenda, para toda a família.",
+      "durationMin": 45,
+      "capacity": 15,
+      "times": [
+        "09:00",
+        "15:00"
+      ],
+      "active": true,
+      "days": [],
+      "photo": "",
+      "tags": [
+        "Fácil",
+        "Famílias"
+      ],
+      "prices": {
+        "hospede": 0,
+        "visitante": 25,
+        "dayuse": 15,
+        "passaporte": 0
+      }
+    },
+    {
+      "id": "a032",
+      "hotelId": "h5",
+      "name": "Atividade a cadastrar",
+      "description": "Estrutura pronta. Cadastre as atividades reais do Portal dos Sonhos no Painel Administrativo.",
+      "durationMin": 60,
+      "capacity": 10,
+      "times": [
+        "09:00",
+        "14:00"
+      ],
+      "active": true,
+      "days": [],
+      "photo": "",
+      "tags": [],
+      "prices": {
+        "hospede": 0,
+        "visitante": 0,
+        "dayuse": 0,
+        "passaporte": 0
+      }
+    }
+  ]
+}
