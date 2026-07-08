@@ -7,6 +7,7 @@ export function TopBar({
   setView,
   isAdminLoggedIn,
   onLogout,
+  onHome,
   theme,
   onToggleTheme,
 }: {
@@ -14,6 +15,7 @@ export function TopBar({
   setView: (v: View) => void;
   isAdminLoggedIn: boolean;
   onLogout: () => void;
+  onHome: () => void;
   theme: "light" | "dark";
   onToggleTheme: () => void;
 }) {
@@ -22,7 +24,9 @@ export function TopBar({
       style={{ background: "var(--paper)", borderBottom: "1px solid var(--line)" }}
       className="no-print px-5 py-3 flex items-center justify-between flex-wrap gap-3"
     >
-      <img src="/logo.webp" alt="Hotéis Fazenda Rede dos Sonhos" style={{ height: 44, display: "block" }} />
+      <button onClick={onHome} title="Página inicial" aria-label="Ir para a página inicial" style={{ display: "block" }}>
+        <img src="/logo.webp" alt="Hotéis Fazenda Rede dos Sonhos" style={{ height: 44, display: "block", cursor: "pointer" }} />
+      </button>
       <div className="flex items-center gap-2">
         <button
           onClick={onToggleTheme}

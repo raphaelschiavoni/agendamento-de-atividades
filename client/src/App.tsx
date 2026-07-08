@@ -15,7 +15,14 @@ type Theme = "light" | "dark";
 export default function App() {
   const [view, setView] = useState<View>("cliente");
   const [theme, setTheme] = useState<Theme>(() => (localStorage.getItem("theme") as Theme) || "light");
+  // Muda ao clicar na logo: remonta o fluxo do cliente, voltando à tela inicial.
+  const [clienteKey, setClienteKey] = useState(0);
   const queryClient = useQueryClient();
+
+  function goHome() {
+    setView("cliente");
+    setClienteKey((k) => k + 1);
+  }
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -49,12 +56,13 @@ export default function App() {
         setView={setView}
         isAdminLoggedIn={!!adminUser}
         onLogout={handleLogout}
+        onHome={goHome}
         theme={theme}
         onToggleTheme={() => setTheme((t) => (t === "light" ? "dark" : "light"))}
       />
       <div style={{ flex: 1 }}>
         {view === "cliente" ? (
-          <ClienteApp />
+          <ClienteApp key={clienteKey} />
         ) : isLoading ? null : adminUser ? (
           <AdminApp />
         ) : (
