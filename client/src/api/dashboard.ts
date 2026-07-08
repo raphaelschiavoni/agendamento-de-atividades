@@ -11,3 +11,5 @@ export const uploadPhoto = async (file: File): Promise<{ url: string }> => {
   if (!res.ok) throw new Error("Falha no upload da foto");
   return res.json();
 };
+
+export const listUploads = () => api.get<{ url: string }[]>("/admin/uploads");
