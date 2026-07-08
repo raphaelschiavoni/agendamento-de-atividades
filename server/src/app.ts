@@ -2,7 +2,8 @@ import express from "express";
 import cors from "cors";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
-import { mkdirSync } from "node:fs";
+import path from "node:path";
+import { existsSync, mkdirSync } from "node:fs";
 import { env } from "./config/env.js";
 import { pool } from "./db/pool.js";
 import { requestLogger } from "./middleware/request-logger.js";
@@ -22,6 +23,10 @@ export function createApp() {
   mkdirSync(env.UPLOADS_DIR, { recursive: true });
 
   const app = express();
+
+  // Behind EasyPanel's reverse proxy (Traefik) the app receives HTTPS via X-Forwarded-*
+  // headers; trust the first proxy so secure cookies and req.protocol work correctly.
+  if (env.isProd) app.set("trust proxy", 1);
 
   // Accept both the configured CLIENT_ORIGIN and its localhost/127.0.0.1 equivalent,
   // since browsers may resolve "localhost" to either depending on the machine.
@@ -43,7 +48,7 @@ export function createApp() {
       cookie: {
         httpOnly: true,
         sameSite: "lax",
-        secure: false,
+        secure: env.isProd, // HTTPS-only cookie in production (served behind TLS)
         maxAge: 8 * 60 * 60 * 1000,
       },
     })
@@ -63,6 +68,16 @@ export function createApp() {
   app.use("/api/admin/dashboard", adminDashboardRouter);
   app.use("/api/admin/whatsapp-log", adminWhatsappLogRouter);
   app.use("/api/admin/uploads", adminUploadsRouter);
+
+  // Serve the built front-end (client/dist) from the same origin in production.
+  // This makes /api same-origin (no CORS/proxy needed) and lets EasyPanel run a
+  // single container. Any non-API GET falls back to index.html for client routing.
+  if (existsSync(env.STATIC_DIR)) {
+    app.use(express.static(env.STATIC_DIR));
+    app.get(/^(?!\/api|\/uploads|\/health).*/, (_req, res) => {
+      res.sendFile(path.join(env.STATIC_DIR, "index.html"));
+    });
+  }
 
   app.use(notFoundHandler);
   app.use(errorHandler);

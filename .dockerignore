@@ -1,0 +1,30 @@
+# Dependencies (reinstaladas dentro da imagem)
+node_modules
+**/node_modules
+
+# Builds locais
+dist
+**/dist
+build
+**/build
+
+# Segredos e ambiente local — NUNCA entram na imagem
+.env
+**/.env
+.env.local
+**/.env.local
+
+# Uploads locais (usar volume persistente em produção)
+server/uploads
+
+# Git e metadados
+.git
+.gitignore
+.dockerignore
+Dockerfile
+*.log
+.DS_Store
+
+# Config de dev do editor/preview
+.claude
+.vscode
