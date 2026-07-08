@@ -4,9 +4,9 @@ import * as service from "./bookings.service.js";
 import * as repo from "./bookings.repository.js";
 
 export async function createCharge(req: Request, res: Response) {
-  const { cart, customer } = req.body ?? {};
+  const { cart, customer, guestHotelId, roomNumber } = req.body ?? {};
   if (!Array.isArray(cart) || !customer) throw new HttpError(400, "Corpo inválido: 'cart' e 'customer' são obrigatórios");
-  const result = await service.createChargeFromCart(cart, customer);
+  const result = await service.createChargeFromCart(cart, customer, { guestHotelId, roomNumber });
   res.status(201).json(result);
 }
 

@@ -14,11 +14,15 @@ export interface BookingRow {
   booking_date: string;
   booking_time: string;
   qty: number;
+  adults: number;
+  children: number;
   unit_price_cents: number;
   total_cents: number;
   customer_name: string;
   customer_phone: string;
   customer_email: string | null;
+  guest_hotel_id: string | null;
+  room_number: string | null;
   status: "pendente" | "pago" | "cancelado";
   used: boolean;
   used_at: string | null;
@@ -43,9 +47,9 @@ export async function insertBookingFromCartItem(
   const { rows } = await client.query<BookingRow>(
     `INSERT INTO bookings (
        voucher_code, hotel_id, activity_id, activity_name, hotel_name, category,
-       booking_date, booking_time, qty, unit_price_cents, total_cents,
-       customer_name, customer_phone, customer_email, status, payment_ref
-     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,'pago',$15)
+       booking_date, booking_time, qty, adults, children, unit_price_cents, total_cents,
+       customer_name, customer_phone, customer_email, guest_hotel_id, room_number, status, payment_ref
+     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,'pago',$19)
      RETURNING *`,
     [
       voucherCode,
@@ -57,11 +61,15 @@ export async function insertBookingFromCartItem(
       item.date,
       item.time,
       item.qty,
+      item.adults,
+      item.children,
       item.unitPriceCents,
       item.totalCents,
       customer.name,
       customer.phone,
       customer.email ?? null,
+      item.guestHotelId,
+      item.roomNumber,
       paymentRef,
     ]
   );

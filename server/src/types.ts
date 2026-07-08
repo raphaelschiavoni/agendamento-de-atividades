@@ -32,11 +32,21 @@ export interface CartItemInput {
   category: Category;
   date: string; // YYYY-MM-DD
   time: string; // HH:MM
-  qty: number;
+  qty: number; // total = adults + children
+  adults?: number;
+  children?: number;
 }
 
 export interface CustomerInput {
   name: string;
   phone: string;
   email?: string;
+}
+
+// Dados do pedido que valem para a reserva toda (não por atividade).
+export interface OrderInput {
+  // Hotel onde o cliente está hospedado (Passaporte dos Sonhos / Hóspede).
+  guestHotelId?: string;
+  // Número do chalé/quarto (hóspedes).
+  roomNumber?: string;
 }

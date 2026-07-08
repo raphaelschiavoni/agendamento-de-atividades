@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Minus, Plus } from "lucide-react";
 import { Modal } from "../../components/Modal";
+import { MonthCalendar } from "../../components/MonthCalendar";
 import { getAvailability } from "../../api/activities";
 import { CATEGORY_META } from "../../lib/constants";
-import { friendlyDate, formatBRL, isoDate, nextDays } from "../../lib/format";
+import { formatBRL, isoDate } from "../../lib/format";
 import type { Activity, Category } from "../../types";
 
 export function ScheduleModal({
@@ -16,48 +17,35 @@ export function ScheduleModal({
   activity: Activity;
   category: Category;
   onClose: () => void;
-  onConfirm: (date: string, time: string, qty: number) => void;
+  onConfirm: (date: string, time: string, adults: number, children: number) => void;
 }) {
-  const days = nextDays(14);
-  const [date, setDate] = useState<string | null>(days[0] ? isoDate(days[0]) : null);
+  const [date, setDate] = useState<string>(isoDate(new Date()));
   const [time, setTime] = useState<string | null>(null);
-  const [qty, setQty] = useState(1);
+  const [adults, setAdults] = useState(1);
+  const [children, setChildren] = useState(0);
+  const qty = adults + children;
 
   const { data } = useQuery({
     queryKey: ["availability", activity.id, date],
-    queryFn: () => getAvailability(activity.id, date!),
+    queryFn: () => getAvailability(activity.id, date),
     enabled: !!date,
   });
   const remainingByTime = new Map((data?.times ?? []).map((t) => [t.time, t.remaining]));
   const remaining = time ? remainingByTime.get(time) ?? activity.capacity : activity.capacity;
 
   useEffect(() => {
-    setQty(1);
+    setAdults(1);
+    setChildren(0);
   }, [time]);
+
+  const price = activity.prices[category] || 0;
+  const canAddMore = qty < remaining;
 
   return (
     <Modal onClose={onClose} title={activity.name}>
-      <div className="mb-3">
+      <div className="mb-4">
         <div className="text-xs font-medium mb-1.5 opacity-70">Escolha a data</div>
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          {days.map((d) => {
-            const iso = isoDate(d);
-            return (
-              <button
-                key={iso}
-                onClick={() => { setDate(iso); setTime(null); }}
-                className="px-3 py-1.5 rounded-md text-xs whitespace-nowrap capitalize"
-                style={{
-                  background: date === iso ? "var(--forest)" : "var(--cream)",
-                  color: date === iso ? "var(--paper)" : "var(--bark)",
-                  border: "1px solid var(--line)",
-                }}
-              >
-                {friendlyDate(d)}
-              </button>
-            );
-          })}
-        </div>
+        <MonthCalendar value={date} onChange={(d) => { setDate(d); setTime(null); }} />
       </div>
 
       <div className="mb-3">
@@ -89,31 +77,34 @@ export function ScheduleModal({
       </div>
 
       {time && (
-        <div className="mb-4">
-          <div className="text-xs font-medium mb-1.5 opacity-70">Quantidade de pessoas</div>
-          <div className="flex items-center gap-3">
-            <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="p-1.5 rounded-md" style={{ border: "1px solid var(--line)" }}>
-              <Minus size={14} />
-            </button>
-            <span className="text-base w-6 text-center">{qty}</span>
-            <button
-              onClick={() => setQty((q) => Math.min(remaining, q + 1))}
-              className="p-1.5 rounded-md" style={{ border: "1px solid var(--line)" }}
-            >
-              <Plus size={14} />
-            </button>
-            <span className="text-xs opacity-60">máx. {remaining} disponíveis</span>
+        <div className="mb-4 space-y-3">
+          <Counter
+            label="Adultos"
+            sub="13 anos ou mais"
+            value={adults}
+            onDec={() => setAdults((a) => Math.max(1, a - 1))}
+            onInc={() => canAddMore && setAdults((a) => a + 1)}
+          />
+          <Counter
+            label="Crianças"
+            sub="até 12 anos"
+            value={children}
+            onDec={() => setChildren((c) => Math.max(0, c - 1))}
+            onInc={() => canAddMore && setChildren((c) => c + 1)}
+          />
+          <div className="text-xs opacity-60">
+            Total: {qty} pessoa(s) · máx. {remaining} disponíveis neste horário
           </div>
         </div>
       )}
 
       <div className="flex items-center justify-between pt-3" style={{ borderTop: "1px solid var(--line)" }}>
         <span style={{ color: CATEGORY_META[category].color, fontWeight: 600 }}>
-          {(activity.prices[category] || 0) === 0 ? "Incluso" : formatBRL((activity.prices[category] || 0) * qty)}
+          {price === 0 ? "Incluso" : formatBRL(price * qty)}
         </span>
         <button
           disabled={!date || !time}
-          onClick={() => onConfirm(date!, time!, qty)}
+          onClick={() => onConfirm(date, time!, adults, children)}
           className="px-4 py-2 rounded-md text-sm"
           style={{ background: !date || !time ? "#ccc" : "var(--forest)", color: "var(--paper)" }}
         >
@@ -121,5 +112,37 @@ export function ScheduleModal({
         </button>
       </div>
     </Modal>
+  );
+}
+
+function Counter({
+  label,
+  sub,
+  value,
+  onDec,
+  onInc,
+}: {
+  label: string;
+  sub: string;
+  value: number;
+  onDec: () => void;
+  onInc: () => void;
+}) {
+  return (
+    <div className="flex items-center justify-between">
+      <div>
+        <div className="text-sm font-medium" style={{ color: "var(--forest)" }}>{label}</div>
+        <div className="text-xs opacity-60">{sub}</div>
+      </div>
+      <div className="flex items-center gap-3">
+        <button onClick={onDec} className="p-1.5 rounded-md" style={{ border: "1px solid var(--line)" }}>
+          <Minus size={14} />
+        </button>
+        <span className="text-base w-6 text-center">{value}</span>
+        <button onClick={onInc} className="p-1.5 rounded-md" style={{ border: "1px solid var(--line)" }}>
+          <Plus size={14} />
+        </button>
+      </div>
+    </div>
   );
 }

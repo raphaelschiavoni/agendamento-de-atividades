@@ -11,8 +11,14 @@ export interface CartSnapshotItem {
   date: string;
   time: string;
   qty: number;
+  adults: number;
+  children: number;
   unitPriceCents: number;
   totalCents: number;
+  // Dados do pedido replicados em cada item (para criar a reserva na aprovação).
+  guestHotelId: string | null;
+  guestHotelName: string | null;
+  roomNumber: string | null;
 }
 
 export interface ChargeRow {

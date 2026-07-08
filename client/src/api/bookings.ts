@@ -7,12 +7,19 @@ export interface CartItemInput {
   date: string;
   time: string;
   qty: number;
+  adults: number;
+  children: number;
 }
 
 export interface CustomerInput {
   name: string;
   phone: string;
   email?: string;
+}
+
+export interface OrderInput {
+  guestHotelId?: string;
+  roomNumber?: string;
 }
 
 export interface CreateChargeResult {
@@ -22,8 +29,8 @@ export interface CreateChargeResult {
   status: "pending";
 }
 
-export const createCharge = (cart: CartItemInput[], customer: CustomerInput) =>
-  api.post<CreateChargeResult>("/checkout/charges", { cart, customer });
+export const createCharge = (cart: CartItemInput[], customer: CustomerInput, order: OrderInput = {}) =>
+  api.post<CreateChargeResult>("/checkout/charges", { cart, customer, ...order });
 
 export const getCharge = (chargeId: string) =>
   api.get<{ status: string; bookings: Booking[] }>(`/checkout/charges/${chargeId}`);

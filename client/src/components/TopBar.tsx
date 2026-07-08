@@ -1,4 +1,4 @@
-import { Home, LogOut, Settings } from "lucide-react";
+import { Home, LogOut, Moon, Settings, Sun } from "lucide-react";
 
 type View = "cliente" | "admin";
 
@@ -7,11 +7,15 @@ export function TopBar({
   setView,
   isAdminLoggedIn,
   onLogout,
+  theme,
+  onToggleTheme,
 }: {
   view: View;
   setView: (v: View) => void;
   isAdminLoggedIn: boolean;
   onLogout: () => void;
+  theme: "light" | "dark";
+  onToggleTheme: () => void;
 }) {
   return (
     <div
@@ -20,6 +24,15 @@ export function TopBar({
     >
       <img src="/logo.webp" alt="Hotéis Fazenda Rede dos Sonhos" style={{ height: 44, display: "block" }} />
       <div className="flex items-center gap-2">
+        <button
+          onClick={onToggleTheme}
+          title={theme === "light" ? "Modo escuro" : "Modo claro"}
+          aria-label={theme === "light" ? "Ativar modo escuro" : "Ativar modo claro"}
+          className="flex items-center p-2 rounded-md"
+          style={{ color: "var(--forest)", border: "1px solid var(--line)" }}
+        >
+          {theme === "light" ? <Moon size={15} /> : <Sun size={15} />}
+        </button>
         <button
           onClick={() => setView("cliente")}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm"

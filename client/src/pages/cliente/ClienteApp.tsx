@@ -23,6 +23,8 @@ export function ClienteApp() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [stage, setStage] = useState<Stage>("browse");
   const [customer, setCustomer] = useState<Customer>({ name: "", phone: "", email: "" });
+  const [guestHotelId, setGuestHotelId] = useState<string>("");
+  const [roomNumber, setRoomNumber] = useState("");
   const [chargeId, setChargeId] = useState<string | null>(null);
   const [pixCode, setPixCode] = useState("");
   const [paidVouchers, setPaidVouchers] = useState<Booking[]>([]);
@@ -42,7 +44,7 @@ export function ClienteApp() {
 
   const cartTotal = cart.reduce((s, i) => s + i.unitPrice * i.qty, 0);
 
-  function addToCart(activity: Activity, date: string, time: string, qty: number) {
+  function addToCart(activity: Activity, date: string, time: string, adults: number, children: number) {
     setCart((c) => [
       ...c,
       {
@@ -53,7 +55,9 @@ export function ClienteApp() {
         category,
         date,
         time,
-        qty,
+        qty: adults + children,
+        adults,
+        children,
         unitPrice: activity.prices[category] || 0,
       },
     ]);
@@ -65,10 +69,26 @@ export function ClienteApp() {
     setCart((c) => c.filter((_, i) => i !== idx));
   }
 
+  // "Hóspede" e "Passaporte dos Sonhos" são categorias de quem está hospedado.
+  const isGuestCategory = cart.some((i) => i.category === "hospede" || i.category === "passaporte");
+  const isPassaporte = cart.some((i) => i.category === "passaporte");
+
   async function createPixCharge() {
     const result = await createCharge(
-      cart.map((i) => ({ activityId: i.activityId, category: i.category, date: i.date, time: i.time, qty: i.qty })),
-      customer
+      cart.map((i) => ({
+        activityId: i.activityId,
+        category: i.category,
+        date: i.date,
+        time: i.time,
+        qty: i.qty,
+        adults: i.adults,
+        children: i.children,
+      })),
+      customer,
+      {
+        guestHotelId: isPassaporte && guestHotelId ? guestHotelId : undefined,
+        roomNumber: isGuestCategory && roomNumber ? roomNumber : undefined,
+      }
     );
     setChargeId(result.chargeId);
     setPixCode(result.pixCopyPaste);
@@ -85,6 +105,8 @@ export function ClienteApp() {
   function startNewOrder() {
     setCart([]);
     setCustomer({ name: "", phone: "", email: "" });
+    setGuestHotelId("");
+    setRoomNumber("");
     setChargeId(null);
     setPixCode("");
     setPaidVouchers([]);
@@ -102,7 +124,21 @@ export function ClienteApp() {
   if (stage === "checkout") {
     return (
       <div className="p-5 max-w-3xl mx-auto">
-        <CheckoutView customer={customer} setCustomer={setCustomer} total={cartTotal} onBack={() => setStage("cart")} onNext={createPixCharge} />
+        <CheckoutView
+          customer={customer}
+          setCustomer={setCustomer}
+          total={cartTotal}
+          hotels={hotels}
+          isGuest={isGuestCategory}
+          isPassaporte={isPassaporte}
+          activityHotelName={cart[0]?.hotelName ?? ""}
+          guestHotelId={guestHotelId}
+          setGuestHotelId={setGuestHotelId}
+          roomNumber={roomNumber}
+          setRoomNumber={setRoomNumber}
+          onBack={() => setStage("cart")}
+          onNext={createPixCharge}
+        />
       </div>
     );
   }
@@ -159,7 +195,7 @@ export function ClienteApp() {
           activity={scheduling}
           category={category}
           onClose={() => setScheduling(null)}
-          onConfirm={(date, time, qty) => addToCart(scheduling, date, time, qty)}
+          onConfirm={(date, time, adults, children) => addToCart(scheduling, date, time, adults, children)}
         />
       )}
 

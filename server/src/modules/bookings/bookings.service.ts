@@ -1,6 +1,6 @@
 import { pool } from "../../db/pool.js";
 import { HttpError } from "../../middleware/error-handler.js";
-import type { CartItemInput, CustomerInput } from "../../types.js";
+import type { CartItemInput, CustomerInput, OrderInput } from "../../types.js";
 import { getPaymentProvider } from "../payments/index.js";
 import { getNotificationProvider } from "../notifications/index.js";
 import { getRemainingForSlotLocked } from "../availability/availability.service.js";
@@ -10,7 +10,13 @@ import * as bookingsRepo from "./bookings.repository.js";
 
 interface EnrichedItem extends CartSnapshotItem {}
 
-async function enrichAndValidateCartItem(item: CartItemInput): Promise<EnrichedItem> {
+interface ResolvedOrder {
+  guestHotelId: string | null;
+  guestHotelName: string | null;
+  roomNumber: string | null;
+}
+
+async function enrichAndValidateCartItem(item: CartItemInput, order: ResolvedOrder): Promise<EnrichedItem> {
   const { rows } = await pool.query<{
     activity_name: string;
     hotel_id: string;
@@ -29,6 +35,8 @@ async function enrichAndValidateCartItem(item: CartItemInput): Promise<EnrichedI
   if (item.qty < 1) throw new HttpError(400, "Quantidade deve ser maior que zero");
 
   const row = rows[0];
+  const adults = item.adults ?? item.qty;
+  const children = item.children ?? 0;
 
   // Optimistic (non-locking) pre-check for a fast fail + good UX; the authoritative
   // check happens transactionally in finalizeBookingsFromCharge.
@@ -51,17 +59,38 @@ async function enrichAndValidateCartItem(item: CartItemInput): Promise<EnrichedI
     date: item.date,
     time: item.time,
     qty: item.qty,
+    adults,
+    children,
     unitPriceCents: row.price_cents,
     totalCents: row.price_cents * item.qty,
+    guestHotelId: order.guestHotelId,
+    guestHotelName: order.guestHotelName,
+    roomNumber: order.roomNumber,
   };
 }
 
-export async function createChargeFromCart(cart: CartItemInput[], customer: CustomerInput) {
+async function resolveOrder(order: OrderInput): Promise<ResolvedOrder> {
+  let guestHotelId: string | null = null;
+  let guestHotelName: string | null = null;
+  if (order.guestHotelId) {
+    const { rows } = await pool.query<{ id: string; name: string }>(
+      "SELECT id, name FROM hotels WHERE id = $1",
+      [order.guestHotelId]
+    );
+    if (rows.length === 0) throw new HttpError(400, "Hotel de hospedagem inválido");
+    guestHotelId = rows[0].id;
+    guestHotelName = rows[0].name;
+  }
+  return { guestHotelId, guestHotelName, roomNumber: order.roomNumber?.trim() || null };
+}
+
+export async function createChargeFromCart(cart: CartItemInput[], customer: CustomerInput, order: OrderInput = {}) {
   if (cart.length === 0) throw new HttpError(400, "Carrinho vazio");
 
+  const resolvedOrder = await resolveOrder(order);
   const enriched: EnrichedItem[] = [];
   for (const item of cart) {
-    enriched.push(await enrichAndValidateCartItem(item));
+    enriched.push(await enrichAndValidateCartItem(item, resolvedOrder));
   }
   const amountCents = enriched.reduce((s, i) => s + i.totalCents, 0);
 
@@ -143,7 +172,7 @@ export async function finalizeBookingsFromCharge(chargeId: string) {
         toNumber: await getHotelWaNumberSafe(booking.hotel_id),
         hotelName: booking.hotel_name,
         bookingId: booking.id,
-        message: buildWhatsAppMessage(booking),
+        message: await buildWhatsAppMessage(booking),
       });
     }
 
@@ -179,13 +208,33 @@ function formatBRL(cents: number): string {
   return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
-function buildWhatsAppMessage(booking: bookingsRepo.BookingRow): string {
+async function buildWhatsAppMessage(booking: bookingsRepo.BookingRow): Promise<string> {
+  const participantes =
+    booking.children > 0
+      ? `${booking.qty} pessoa(s) (${booking.adults} adulto(s), ${booking.children} criança(s))`
+      : `${booking.qty} pessoa(s)`;
+  let hospedagem = "";
+  if (booking.guest_hotel_id) {
+    const { rows } = await pool.query<{ name: string }>("SELECT name FROM hotels WHERE id = $1", [
+      booking.guest_hotel_id,
+    ]);
+    const guestName = rows[0]?.name ?? booking.guest_hotel_id;
+    hospedagem = `Hospedado em: ${guestName}`;
+    if (booking.room_number) hospedagem += ` (Chalé/Quarto ${booking.room_number})`;
+    hospedagem += "\n";
+    if (booking.category === "passaporte" && guestName !== booking.hotel_name) {
+      hospedagem += `✨ Passaporte dos Sonhos — usando atividade de outro hotel da rede\n`;
+    }
+  } else if (booking.room_number) {
+    hospedagem = `Chalé/Quarto: ${booking.room_number}\n`;
+  }
   return (
     `🔔 *Nova venda confirmada — ${booking.hotel_name}*\n` +
     `Atividade: ${booking.activity_name}\n` +
     `Categoria: ${CATEGORY_LABELS[booking.category] ?? booking.category}\n` +
+    hospedagem +
     `Data/Hora: ${booking.booking_date} às ${booking.booking_time.slice(0, 5)}\n` +
-    `Quantidade: ${booking.qty} pessoa(s)\n` +
+    `Participantes: ${participantes}\n` +
     `Valor: ${formatBRL(booking.total_cents)} — pago via Pix ✅\n` +
     `Cliente: ${booking.customer_name} — ${booking.customer_phone}\n` +
     `Voucher: ${booking.voucher_code}`
@@ -204,9 +253,13 @@ export function toBookingDTO(row: bookingsRepo.BookingRow) {
     date: row.booking_date,
     time: row.booking_time.slice(0, 5),
     qty: row.qty,
+    adults: row.adults,
+    children: row.children,
     unitPrice: row.unit_price_cents / 100,
     total: row.total_cents / 100,
     customer: { name: row.customer_name, phone: row.customer_phone, email: row.customer_email },
+    guestHotelId: row.guest_hotel_id,
+    roomNumber: row.room_number,
     status: row.status,
     used: row.used,
     createdAt: row.created_at,

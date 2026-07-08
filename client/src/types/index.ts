@@ -39,6 +39,8 @@ export interface CartItem {
   date: string;
   time: string;
   qty: number;
+  adults: number;
+  children: number;
   unitPrice: number;
 }
 
@@ -53,9 +55,13 @@ export interface Booking {
   date: string;
   time: string;
   qty: number;
+  adults: number;
+  children: number;
   unitPrice: number;
   total: number;
   customer: Customer;
+  guestHotelId: string | null;
+  roomNumber: string | null;
   status: "pendente" | "pago" | "cancelado";
   used: boolean;
   createdAt: string;

@@ -17,5 +17,24 @@
   --danger: #A83F2C;
 }
 
+:root[data-theme="dark"] {
+  --forest: #4E8060;
+  --forest-light: #5E9070;
+  --moss: #7BA96C;
+  --moss-light: #263022;
+  --clay: #D98A54;
+  --clay-light: #3A2A1E;
+  --gold: #E0B45A;
+  --gold-light: #3A311C;
+  --plum: #B197D6;
+  --plum-light: #2E2838;
+  --sand: #2A2620;
+  --cream: #15120E;
+  --paper: #221F19;
+  --bark: #ECE5D7;
+  --line: #38322A;
+  --danger: #E58068;
+}
+
 .rs-display { font-family: 'Fraunces', Georgia, serif; }
 .rs-body { font-family: 'Work Sans', system-ui, sans-serif; }

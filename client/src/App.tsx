@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { TopBar } from "./components/TopBar";
 import { Footer } from "./components/Footer";
@@ -10,9 +10,17 @@ import * as authApi from "./api/auth";
 
 type View = "cliente" | "admin";
 
+type Theme = "light" | "dark";
+
 export default function App() {
   const [view, setView] = useState<View>("cliente");
+  const [theme, setTheme] = useState<Theme>(() => (localStorage.getItem("theme") as Theme) || "light");
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("theme", theme);
+  }, [theme]);
 
   const { data: adminUser, isLoading } = useQuery({
     queryKey: ["auth-me"],
@@ -36,7 +44,14 @@ export default function App() {
         fontFamily: "'Segoe UI', system-ui, sans-serif",
       }}
     >
-      <TopBar view={view} setView={setView} isAdminLoggedIn={!!adminUser} onLogout={handleLogout} />
+      <TopBar
+        view={view}
+        setView={setView}
+        isAdminLoggedIn={!!adminUser}
+        onLogout={handleLogout}
+        theme={theme}
+        onToggleTheme={() => setTheme((t) => (t === "light" ? "dark" : "light"))}
+      />
       <div style={{ flex: 1 }}>
         {view === "cliente" ? (
           <ClienteApp />

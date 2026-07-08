@@ -16,17 +16,27 @@ export function ConfirmationView({ vouchers, onNewOrder }: { vouchers: Booking[]
           Seu voucher foi liberado automaticamente e a recepção já foi avisada por WhatsApp. Apresente o código abaixo na chegada.
         </p>
         <div className="space-y-3">
-          {vouchers.map((v) => (
-            <div key={v.id} className="rounded-lg p-4 flex items-center gap-4" style={{ background: "var(--paper)", border: "1px solid var(--line)" }}>
-              <Ticket size={28} color={CATEGORY_META[v.category].color} />
-              <div className="flex-1">
-                <div className="text-sm font-medium" style={{ color: "var(--forest)" }}>{v.activityName} — {v.hotelName}</div>
-                <div className="text-xs opacity-60">{v.date} às {v.time} · {v.qty} pessoa(s) · {CATEGORY_META[v.category].label}</div>
-                <div className="text-sm mt-1 font-mono tracking-wider" style={{ color: "var(--gold)" }}>{v.voucherCode}</div>
+          {vouchers.map((v) => {
+            const participantes =
+              v.children > 0
+                ? `${v.qty} pessoa(s) (${v.adults} adulto(s), ${v.children} criança(s))`
+                : `${v.qty} pessoa(s)`;
+            const crossHotel = v.category === "passaporte" && v.guestHotelId && v.guestHotelId !== v.hotelId;
+            return (
+              <div key={v.id} className="rounded-lg p-4 flex items-center gap-4" style={{ background: "var(--paper)", border: "1px solid var(--line)" }}>
+                <Ticket size={28} color={CATEGORY_META[v.category].color} />
+                <div className="flex-1">
+                  <div className="text-sm font-medium" style={{ color: "var(--forest)" }}>{v.activityName} — {v.hotelName}</div>
+                  <div className="text-xs opacity-60">{v.date} às {v.time} · {participantes} · {CATEGORY_META[v.category].label}</div>
+                  {crossHotel && (
+                    <div className="text-xs mt-0.5" style={{ color: "var(--plum)" }}>✨ Passaporte dos Sonhos — benefício da sua hospedagem</div>
+                  )}
+                  <div className="text-sm mt-1 font-mono tracking-wider" style={{ color: "var(--gold)" }}>{v.voucherCode}</div>
+                </div>
+                <span className="text-sm font-medium">{formatBRL(v.total)}</span>
               </div>
-              <span className="text-sm font-medium">{formatBRL(v.total)}</span>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
       <div className="no-print">
