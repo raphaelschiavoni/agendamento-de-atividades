@@ -73,6 +73,13 @@ export async function listActivitiesForHotel(
   return attachTimesAndPrices(rows);
 }
 
+export async function listAllActive(): Promise<ActivityDTO[]> {
+  const { rows } = await pool.query<ActivityRow>(
+    "SELECT * FROM activities WHERE active = true ORDER BY hotel_id, name"
+  );
+  return attachTimesAndPrices(rows);
+}
+
 export async function getActivityById(id: string): Promise<ActivityDTO | null> {
   const { rows } = await pool.query<ActivityRow>("SELECT * FROM activities WHERE id = $1", [id]);
   if (rows.length === 0) return null;

@@ -3,6 +3,11 @@ import { HttpError } from "../../middleware/error-handler.js";
 import * as repo from "./activities.repository.js";
 import { getAvailabilityForDate } from "../availability/availability.service.js";
 
+export async function listAllActivities(_req: Request, res: Response) {
+  const activities = await repo.listAllActive();
+  res.json(activities);
+}
+
 export async function getActivity(req: Request, res: Response) {
   const activity = await repo.getActivityById(req.params.id);
   if (!activity) throw new HttpError(404, "Atividade não encontrada");

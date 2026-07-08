@@ -4,6 +4,7 @@ import { requireAdmin } from "../auth/auth.middleware.js";
 import * as controller from "./activities.controller.js";
 
 export const activitiesRouter = Router();
+activitiesRouter.get("/", asyncRoute(controller.listAllActivities));
 activitiesRouter.get("/:id", asyncRoute(controller.getActivity));
 activitiesRouter.get("/:id/availability", asyncRoute(controller.getActivityAvailability));
 

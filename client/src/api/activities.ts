@@ -1,6 +1,8 @@
 import { api } from "./client";
 import type { Activity, SlotAvailability } from "../types";
 
+export const listAllActivities = () => api.get<Activity[]>("/activities");
+
 export const getActivity = (id: string) => api.get<Activity>(`/activities/${id}`);
 
 export const getAvailability = (id: string, date: string) =>

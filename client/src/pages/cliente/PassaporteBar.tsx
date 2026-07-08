@@ -5,21 +5,22 @@ import type { Hotel } from "../../types";
 // explica o benefício, coleta a hospedagem e permite ver atividades de qualquer hotel.
 export function PassaporteBar({
   hotels,
-  activityHotelId,
-  onPickActivityHotel,
+  activityFilter,
+  onPickFilter,
   guestHotelId,
   setGuestHotelId,
   roomNumber,
   setRoomNumber,
 }: {
   hotels: Hotel[];
-  activityHotelId: string;
-  onPickActivityHotel: (id: string) => void;
+  activityFilter: string; // "all" ou id do hotel
+  onPickFilter: (v: string) => void;
   guestHotelId: string;
   setGuestHotelId: (v: string) => void;
   roomNumber: string;
   setRoomNumber: (v: string) => void;
 }) {
+  const options = [{ id: "all", name: "Todos os hotéis" }, ...hotels.map((h) => ({ id: h.id, name: h.name.replace(" dos Sonhos", "") }))];
   return (
     <div className="rounded-lg p-4 mb-4" style={{ background: "var(--plum-light)", border: "1px solid var(--plum)" }}>
       <div className="flex items-start gap-2 mb-3">
@@ -60,12 +61,12 @@ export function PassaporteBar({
       <div>
         <label className="text-xs font-medium opacity-70 block mb-1.5">Ver atividades de:</label>
         <div className="flex flex-wrap gap-2">
-          {hotels.map((h) => {
-            const active = h.id === activityHotelId;
+          {options.map((o) => {
+            const active = o.id === activityFilter;
             return (
               <button
-                key={h.id}
-                onClick={() => onPickActivityHotel(h.id)}
+                key={o.id}
+                onClick={() => onPickFilter(o.id)}
                 className="px-3 py-1.5 rounded-full text-sm"
                 style={{
                   background: active ? "var(--plum)" : "var(--paper)",
@@ -73,7 +74,7 @@ export function PassaporteBar({
                   border: "1px solid var(--plum)",
                 }}
               >
-                {h.name.replace(" dos Sonhos", "")}
+                {o.name}
               </button>
             );
           })}
