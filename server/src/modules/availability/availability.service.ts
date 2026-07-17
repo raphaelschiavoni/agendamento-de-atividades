@@ -1,5 +1,6 @@
 import type { PoolClient } from "pg";
 import { pool } from "../../db/pool.js";
+import { effectiveCapacity } from "../../types.js";
 
 export interface SlotAvailability {
   time: string;
@@ -9,12 +10,16 @@ export interface SlotAvailability {
 /** Read-only view used by the client to display remaining slots. Not authoritative by itself —
  *  the real check happens transactionally at booking-confirmation time (see bookings.service.ts). */
 export async function getAvailabilityForDate(activityId: string, date: string): Promise<SlotAvailability[]> {
-  const { rows: activityRows } = await pool.query<{ capacity: number }>(
-    "SELECT capacity FROM activities WHERE id = $1",
+  const { rows: activityRows } = await pool.query<{ capacity: number; weekday_capacities: Record<string, number> | null }>(
+    "SELECT capacity, weekday_capacities FROM activities WHERE id = $1",
     [activityId]
   );
   if (activityRows.length === 0) return [];
-  const capacity = activityRows[0].capacity;
+  const capacity = effectiveCapacity(
+    activityRows[0].capacity,
+    activityRows[0].weekday_capacities as Record<number, number> | null,
+    date
+  );
 
   const { rows: timeRows } = await pool.query<{ time_of_day: string }>(
     `SELECT to_char(time_of_day, 'HH24:MI') AS time_of_day FROM activity_times WHERE activity_id = $1 ORDER BY time_of_day`,
@@ -43,12 +48,16 @@ export async function getRemainingForSlotLocked(
   date: string,
   time: string
 ): Promise<number> {
-  const { rows: activityRows } = await client.query<{ capacity: number }>(
-    "SELECT capacity FROM activities WHERE id = $1",
+  const { rows: activityRows } = await client.query<{ capacity: number; weekday_capacities: Record<string, number> | null }>(
+    "SELECT capacity, weekday_capacities FROM activities WHERE id = $1",
     [activityId]
   );
   if (activityRows.length === 0) throw new Error(`Activity ${activityId} not found`);
-  const capacity = activityRows[0].capacity;
+  const capacity = effectiveCapacity(
+    activityRows[0].capacity,
+    activityRows[0].weekday_capacities as Record<number, number> | null,
+    date
+  );
 
   const { rows } = await client.query<{ occupied: string }>(
     `SELECT COALESCE(SUM(qty), 0) AS occupied FROM bookings

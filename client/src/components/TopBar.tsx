@@ -1,4 +1,4 @@
-import { Home, LogOut, Moon, Settings, Sun } from "lucide-react";
+import { Home, LogOut, Moon, Sun } from "lucide-react";
 
 type View = "cliente" | "admin";
 
@@ -47,17 +47,6 @@ export function TopBar({
           }}
         >
           <Home size={14} /> Área do Cliente
-        </button>
-        <button
-          onClick={() => setView("admin")}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm"
-          style={{
-            background: view === "admin" ? "var(--forest)" : "transparent",
-            color: view === "admin" ? "var(--paper)" : "var(--forest)",
-            border: "1px solid " + (view === "admin" ? "var(--forest)" : "var(--line)"),
-          }}
-        >
-          <Settings size={14} /> Painel Administrativo
         </button>
         {view === "admin" && isAdminLoggedIn && (
           <button

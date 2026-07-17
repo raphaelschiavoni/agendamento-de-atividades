@@ -13,6 +13,18 @@ interface ActivityRow {
   tags: string[];
   weekdays: number[];
   allowed_dates: string[];
+  weekday_capacities: Record<string, number> | null;
+}
+
+// Chaves do JSONB chegam como string; converte para números e descarta valores inválidos.
+function normalizeWeekdayCapacities(raw: Record<string, number> | null): Record<number, number> {
+  const out: Record<number, number> = {};
+  for (const [k, v] of Object.entries(raw ?? {})) {
+    const d = Number(k);
+    const n = Number(v);
+    if (Number.isInteger(d) && d >= 0 && d <= 6 && Number.isFinite(n) && n > 0) out[d] = Math.floor(n);
+  }
+  return out;
 }
 
 async function attachTimesAndPrices(rows: ActivityRow[]): Promise<ActivityDTO[]> {
@@ -58,6 +70,7 @@ async function attachTimesAndPrices(rows: ActivityRow[]): Promise<ActivityDTO[]>
       tags: r.tags,
       weekdays: r.weekdays ?? [],
       allowedDates: r.allowed_dates ?? [],
+      weekdayCapacities: normalizeWeekdayCapacities(r.weekday_capacities),
       times: timesByActivity.get(r.id) ?? [],
       prices,
     };
@@ -102,6 +115,7 @@ export interface UpsertActivityInput {
   tags: string[];
   weekdays: number[];
   allowedDates: string[];
+  weekdayCapacities: Record<number, number>;
   times: string[];
   prices: Record<Category, number>;
 }
@@ -116,9 +130,9 @@ export async function createActivity(input: UpsertActivityInput): Promise<Activi
     await client.query("BEGIN");
     const id = genActivityId();
     await client.query(
-      `INSERT INTO activities (id, hotel_id, name, description, duration_min, capacity, active, photo_url, tags, weekdays, allowed_dates)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
-      [id, input.hotelId, input.name, input.description, input.durationMin, input.capacity, input.active, input.photo ?? null, input.tags, input.weekdays ?? [], input.allowedDates ?? []]
+      `INSERT INTO activities (id, hotel_id, name, description, duration_min, capacity, active, photo_url, tags, weekdays, allowed_dates, weekday_capacities)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+      [id, input.hotelId, input.name, input.description, input.durationMin, input.capacity, input.active, input.photo ?? null, input.tags, input.weekdays ?? [], input.allowedDates ?? [], JSON.stringify(input.weekdayCapacities ?? {})]
     );
     await insertTimesAndPrices(client, id, input.times, input.prices);
     await client.query("COMMIT");
@@ -146,10 +160,15 @@ export async function updateActivity(id: string, input: Partial<UpsertActivityIn
          tags = COALESCE($8, tags),
          weekdays = COALESCE($9, weekdays),
          allowed_dates = COALESCE($10, allowed_dates),
+         weekday_capacities = COALESCE($11, weekday_capacities),
          updated_at = now()
        WHERE id = $1
        RETURNING id`,
-      [id, input.name, input.description, input.durationMin, input.capacity, input.active, input.photo, input.tags, input.weekdays, input.allowedDates]
+      [
+        id, input.name, input.description, input.durationMin, input.capacity, input.active, input.photo,
+        input.tags, input.weekdays, input.allowedDates,
+        input.weekdayCapacities !== undefined ? JSON.stringify(input.weekdayCapacities) : null,
+      ]
     );
     if (rows.length === 0) {
       await client.query("ROLLBACK");

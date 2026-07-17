@@ -24,6 +24,7 @@ export interface Activity {
   tags: string[];
   weekdays: number[]; // 0=Dom..6=Sáb; vazio = todos os dias
   allowedDates: string[]; // datas específicas 'YYYY-MM-DD' (complementam os dias da semana)
+  weekdayCapacities: Record<number, number>; // vagas/horário por dia da semana (sobrepõe a padrão)
   times: string[];
   prices: Record<Category, number>;
 }

@@ -48,6 +48,7 @@ export default function App() {
       className="app-shell"
       style={{
         background: "var(--cream)",
+        color: "var(--bark)",
         minHeight: "100vh",
         display: "flex",
         flexDirection: "column",
@@ -72,7 +73,7 @@ export default function App() {
           <LoginForm onLoggedIn={() => queryClient.invalidateQueries({ queryKey: ["auth-me"] })} />
         )}
       </div>
-      <Footer />
+      <Footer onAdmin={() => setView("admin")} />
       <WhatsAppFloat />
     </div>
   );

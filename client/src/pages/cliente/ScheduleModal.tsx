@@ -30,8 +30,14 @@ export function ScheduleModal({
     queryFn: () => getAvailability(activity.id, date),
     enabled: !!date,
   });
+  // Capacidade efetiva do dia escolhido (pode variar por dia da semana).
+  const effCap = (() => {
+    const wd = new Date(`${date}T12:00:00`).getDay();
+    const specific = activity.weekdayCapacities?.[wd];
+    return typeof specific === "number" && specific > 0 ? specific : activity.capacity;
+  })();
   const remainingByTime = new Map((data?.times ?? []).map((t) => [t.time, t.remaining]));
-  const remaining = time ? remainingByTime.get(time) ?? activity.capacity : activity.capacity;
+  const remaining = time ? remainingByTime.get(time) ?? effCap : effCap;
 
   useEffect(() => {
     setAdults(1);

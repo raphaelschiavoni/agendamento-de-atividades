@@ -27,8 +27,16 @@ export interface ActivityDTO {
   tags: string[];
   weekdays: number[]; // dias da semana permitidos (0=Dom..6=Sáb); vazio = todos os dias
   allowedDates: string[]; // datas específicas 'YYYY-MM-DD' (complementam os dias da semana)
+  weekdayCapacities: Record<number, number>; // capacidade/horário por dia da semana (sobrepõe a padrão)
   times: string[];
   prices: Record<Category, number>;
+}
+
+/** Capacidade efetiva por horário numa data: a do dia da semana, se definida; senão a padrão. */
+export function effectiveCapacity(capacity: number, weekdayCapacities: Record<number, number> | null, date: string): number {
+  const weekday = new Date(`${date}T12:00:00`).getDay();
+  const specific = weekdayCapacities?.[weekday];
+  return typeof specific === "number" && specific > 0 ? specific : capacity;
 }
 
 export interface CartItemInput {

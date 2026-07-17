@@ -3,7 +3,7 @@ import { Modal } from "../../components/Modal";
 import { Field } from "../../components/Field";
 import { PhotoField } from "../../components/PhotoField";
 import { AdminScheduleCalendar } from "../../components/AdminScheduleCalendar";
-import { CATEGORY_META, CATEGORY_ORDER } from "../../lib/constants";
+import { CATEGORY_META, CATEGORY_ORDER, WEEKDAY_LABELS } from "../../lib/constants";
 import type { Activity, Category } from "../../types";
 
 type FormState = Omit<Activity, "id" | "hotelId"> & { id?: string };
@@ -29,9 +29,20 @@ export function ActivityEditor({
       tags: [],
       weekdays: [],
       allowedDates: [],
+      weekdayCapacities: {},
       prices: { hospede: 0, visitante: 0, dayuse: 0, passaporte: 0 },
     }
   );
+
+  function setWeekdayCapacity(d: number, value: string) {
+    setForm((f) => {
+      const caps = { ...(f.weekdayCapacities ?? {}) };
+      const n = Number(value);
+      if (!value.trim() || !Number.isFinite(n) || n <= 0) delete caps[d];
+      else caps[d] = Math.floor(n);
+      return { ...f, weekdayCapacities: caps };
+    });
+  }
 
   function toggleWeekday(d: number) {
     setForm((f) => {
@@ -85,6 +96,31 @@ export function ActivityEditor({
             allowedDates={form.allowedDates ?? []}
             onToggleDate={toggleDate}
           />
+        </div>
+
+        <div>
+          <label className="text-xs font-medium opacity-70 mb-1 block">
+            Vagas por horário em cada dia (deixe em branco para usar o padrão: {form.capacity})
+          </label>
+          <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(70px, 1fr))" }}>
+            {(form.weekdays.length > 0 ? form.weekdays : [0, 1, 2, 3, 4, 5, 6]).map((d) => (
+              <div key={d}>
+                <label className="text-xs opacity-60 block text-center">{WEEKDAY_LABELS[d]}</label>
+                <input
+                  type="number"
+                  min={1}
+                  value={form.weekdayCapacities?.[d] ?? ""}
+                  onChange={(e) => setWeekdayCapacity(d, e.target.value)}
+                  placeholder={String(form.capacity)}
+                  className="w-full rounded-md px-2 py-1.5 text-sm text-center"
+                  style={{ border: "1px solid var(--line)" }}
+                />
+              </div>
+            ))}
+          </div>
+          <p className="text-xs opacity-50 mt-1">
+            Ex.: Seg 8, Ter 6, Qua 10 — cada horário daquele dia passa a ter essas vagas.
+          </p>
         </div>
 
         <Field label="Etiquetas (separadas por vírgula)" value={tagsText} onChange={setTagsText} placeholder="Fácil, A partir de 3 anos, Acessível" />
