@@ -14,12 +14,17 @@ export async function getActivity(req: Request, res: Response) {
   res.json(activity);
 }
 
+const VALID_CATEGORIES = new Set(["hospede", "visitante", "dayuse", "passaporte"]);
+
 export async function getActivityAvailability(req: Request, res: Response) {
   const date = String(req.query.date ?? "");
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new HttpError(400, "Parâmetro 'date' inválido (use YYYY-MM-DD)");
+  const category = typeof req.query.category === "string" && VALID_CATEGORIES.has(req.query.category)
+    ? req.query.category
+    : undefined;
   const activity = await repo.getActivityById(req.params.id);
   if (!activity) throw new HttpError(404, "Atividade não encontrada");
-  const times = await getAvailabilityForDate(activity.id, date);
+  const times = await getAvailabilityForDate(activity.id, date, category);
   res.json({ date, times });
 }
 

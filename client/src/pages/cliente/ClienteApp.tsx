@@ -76,12 +76,18 @@ export function ClienteApp({ lockedSlug = null }: { lockedSlug?: string | null }
   }
 
   const hotel = hotels.find((h) => h.id === hotelId);
-  const activeActivities = useMemo(() => activities.filter((a) => a.active), [activities]);
+  // Vagas por categoria: 0 = a atividade não aparece na categoria selecionada.
+  const visibleInCategory = (a: Activity) => a.categoryCapacities?.[category] !== 0;
+  const activeActivities = useMemo(
+    () => activities.filter((a) => a.active && visibleInCategory(a)),
+    [activities, category]
+  );
 
   // Atividades do Passaporte, filtradas e agrupadas por hotel.
   const passaporteGroups = useMemo(() => {
     if (!isPassaporteMode) return [];
-    const filtered = passFilter === "all" ? allActivities : allActivities.filter((a) => a.hotelId === passFilter);
+    const filtered = (passFilter === "all" ? allActivities : allActivities.filter((a) => a.hotelId === passFilter))
+      .filter((a) => a.categoryCapacities?.passaporte !== 0);
     return hotels
       .map((h) => ({ hotel: h, items: filtered.filter((a) => a.hotelId === h.id) }))
       .filter((g) => g.items.length > 0);

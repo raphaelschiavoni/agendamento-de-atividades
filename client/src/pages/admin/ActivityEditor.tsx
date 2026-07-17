@@ -51,8 +51,19 @@ export function ActivityEditor({
       weekdayCapacities: {},
       schedule: {},
       prices: { hospede: 0, visitante: 0, dayuse: 0, passaporte: 0 },
+      categoryCapacities: {},
     }
   );
+
+  function setCategoryCapacity(c: Category, value: string) {
+    setForm((f) => {
+      const caps = { ...(f.categoryCapacities ?? {}) };
+      const n = Number(value);
+      if (!value.trim() || !Number.isFinite(n) || n < 0) delete caps[c];
+      else caps[c] = Math.floor(n);
+      return { ...f, categoryCapacities: caps };
+    });
+  }
   const [schedule, setSchedule] = useState<ActivitySchedule>(() => scheduleFromLegacy(activity));
   const [tagsText, setTagsText] = useState((activity?.tags || []).join(", "));
 
@@ -113,6 +124,38 @@ export function ActivityEditor({
           <p className="text-xs opacity-50 mt-1">
             Cada dia tem seus horários, e cada horário suas vagas (em branco = padrão {form.capacity}).
             Use "Datas pontuais" para eventos em dias específicos.
+          </p>
+        </div>
+
+        <div>
+          <label className="text-xs font-medium opacity-70 mb-1 block">Vagas por categoria (por horário)</label>
+          <div className="grid grid-cols-2 gap-2">
+            {CATEGORY_ORDER.map((c) => {
+              const v = form.categoryCapacities?.[c as Category];
+              const hidden = v === 0;
+              return (
+                <div key={c}>
+                  <label className="text-xs opacity-60">{CATEGORY_META[c].label}</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={v ?? ""}
+                    placeholder="Sem limite"
+                    onChange={(e) => setCategoryCapacity(c as Category, e.target.value)}
+                    className="w-full rounded-md px-2 py-1.5 text-sm"
+                    style={{
+                      border: "1px solid " + (hidden ? "var(--danger)" : "var(--line)"),
+                      color: hidden ? "var(--danger)" : undefined,
+                    }}
+                  />
+                  {hidden && <p className="text-xs mt-0.5" style={{ color: "var(--danger)" }}>Não aparece nesta categoria</p>}
+                </div>
+              );
+            })}
+          </div>
+          <p className="text-xs opacity-50 mt-1">
+            Em branco = sem limite (usa as vagas do horário) · <strong>0 = a atividade some desta categoria</strong> ·
+            um número = máximo de vagas dessa categoria em cada horário.
           </p>
         </div>
 

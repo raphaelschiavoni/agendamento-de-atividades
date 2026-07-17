@@ -66,44 +66,73 @@ function dedupeSorted(slots: EffectiveSlot[]): EffectiveSlot[] {
   return Array.from(map.values()).sort((x, y) => x.time.localeCompare(y.time));
 }
 
+/** Quota de vagas da categoria por horário: null = sem limite; 0 = categoria desabilitada. */
+export async function getCategoryQuota(q: Queryable, activityId: string, category: string): Promise<number | null> {
+  const { rows } = await q.query<{ cap: number | null }>(
+    "SELECT (category_capacities ->> $2)::int AS cap FROM activities WHERE id = $1",
+    [activityId, category]
+  );
+  const cap = rows[0]?.cap;
+  return typeof cap === "number" && Number.isFinite(cap) && cap >= 0 ? cap : null;
+}
+
 /** Read-only view used by the client to display remaining slots. Not authoritative by itself —
- *  the real check happens transactionally at booking-confirmation time (see bookings.service.ts). */
-export async function getAvailabilityForDate(activityId: string, date: string): Promise<SlotAvailability[]> {
+ *  the real check happens transactionally at booking-confirmation time (see bookings.service.ts).
+ *  Com `category`, o restante considera também a quota daquela categoria. */
+export async function getAvailabilityForDate(
+  activityId: string,
+  date: string,
+  category?: string
+): Promise<SlotAvailability[]> {
   const slots = await getEffectiveSlots(pool, activityId, date);
   if (!slots || slots.length === 0) return [];
 
-  const { rows: occupiedRows } = await pool.query<{ booking_time: string; occupied: string }>(
-    `SELECT to_char(booking_time, 'HH24:MI') AS booking_time, COALESCE(SUM(qty), 0) AS occupied
+  const quota = category ? await getCategoryQuota(pool, activityId, category) : null;
+  if (quota === 0) return []; // categoria desabilitada para esta atividade
+
+  const { rows: occupiedRows } = await pool.query<{ booking_time: string; occupied: string; occupied_cat: string }>(
+    `SELECT to_char(booking_time, 'HH24:MI') AS booking_time,
+            COALESCE(SUM(qty), 0) AS occupied,
+            COALESCE(SUM(qty) FILTER (WHERE category = $3::customer_category), 0) AS occupied_cat
      FROM bookings
      WHERE activity_id = $1 AND booking_date = $2 AND status <> 'cancelado'
      GROUP BY booking_time`,
-    [activityId, date]
+    [activityId, date, category ?? null]
   );
-  const occupiedByTime = new Map(occupiedRows.map((r) => [r.booking_time, Number(r.occupied)]));
+  const byTime = new Map(occupiedRows.map((r) => [r.booking_time, { total: Number(r.occupied), cat: Number(r.occupied_cat) }]));
 
-  return slots.map((s) => ({
-    time: s.time,
-    remaining: Math.max(0, s.capacity - (occupiedByTime.get(s.time) ?? 0)),
-  }));
+  return slots.map((s) => {
+    const occ = byTime.get(s.time) ?? { total: 0, cat: 0 };
+    let remaining = s.capacity - occ.total;
+    if (quota !== null && quota > 0) remaining = Math.min(remaining, quota - occ.cat);
+    return { time: s.time, remaining: Math.max(0, remaining) };
+  });
 }
 
 /** Authoritative capacity check, must run inside the same transaction/lock as the insert.
- *  Retorna -1 quando o horário não existe/não opera nessa data. */
+ *  Retorna -1 quando o horário não existe nessa data ou a categoria está desabilitada. */
 export async function getRemainingForSlotLocked(
-  client: PoolClient,
+  q: Queryable,
   activityId: string,
   date: string,
-  time: string
+  time: string,
+  category?: string
 ): Promise<number> {
-  const slots = await getEffectiveSlots(client, activityId, date);
+  const slots = await getEffectiveSlots(q, activityId, date);
   const slot = slots?.find((s) => s.time === time.slice(0, 5));
   if (!slot) return -1;
 
-  const { rows } = await client.query<{ occupied: string }>(
-    `SELECT COALESCE(SUM(qty), 0) AS occupied FROM bookings
+  const quota = category ? await getCategoryQuota(q, activityId, category) : null;
+  if (quota === 0) return -1;
+
+  const { rows } = await q.query<{ occupied: string; occupied_cat: string }>(
+    `SELECT COALESCE(SUM(qty), 0) AS occupied,
+            COALESCE(SUM(qty) FILTER (WHERE category = $4::customer_category), 0) AS occupied_cat
+     FROM bookings
      WHERE activity_id = $1 AND booking_date = $2 AND booking_time = $3 AND status <> 'cancelado'`,
-    [activityId, date, time]
+    [activityId, date, time, category ?? null]
   );
-  const occupied = Number(rows[0].occupied);
-  return slot.capacity - occupied;
+  let remaining = slot.capacity - Number(rows[0].occupied);
+  if (quota !== null && quota > 0) remaining = Math.min(remaining, quota - Number(rows[0].occupied_cat));
+  return remaining;
 }

@@ -31,6 +31,8 @@ export interface ActivityDTO {
   schedule: ActivitySchedule; // agenda por dia da semana + datas pontuais (preferida quando preenchida)
   times: string[];
   prices: Record<Category, number>;
+  // Vagas por categoria por horário: ausente = sem limite; 0 = categoria desabilitada.
+  categoryCapacities: Partial<Record<Category, number>>;
 }
 
 // Um horário da agenda; capacity ausente => capacidade padrão da atividade.

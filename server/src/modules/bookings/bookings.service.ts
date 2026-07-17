@@ -49,12 +49,11 @@ async function enrichAndValidateCartItem(item: CartItemInput, order: ResolvedOrd
 
   // Optimistic (non-locking) pre-check for a fast fail + good UX; the authoritative
   // check happens transactionally in finalizeBookingsFromCharge.
-  const { rows: occRows } = await pool.query<{ occupied: string }>(
-    `SELECT COALESCE(SUM(qty), 0) AS occupied FROM bookings
-     WHERE activity_id = $1 AND booking_date = $2 AND booking_time = $3 AND status <> 'cancelado'`,
-    [item.activityId, item.date, item.time]
-  );
-  const remaining = slot.capacity - Number(occRows[0].occupied);
+  const remaining = await getRemainingForSlotLocked(pool, item.activityId, item.date, item.time, item.category);
+  if (remaining === -1) {
+    // Slot já foi validado acima; -1 aqui significa categoria desabilitada (quota 0).
+    throw new HttpError(409, `${row.activity_name} não está disponível para a categoria selecionada.`);
+  }
   if (item.qty > remaining) {
     throw new HttpError(409, `Vagas insuficientes para ${row.activity_name} em ${item.date} ${item.time}`);
   }
@@ -151,7 +150,7 @@ export async function finalizeBookingsFromCharge(chargeId: string) {
 
     for (const item of items) {
       await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [slotSortKey(item)]);
-      const remaining = await getRemainingForSlotLocked(client, item.activityId, item.date, item.time);
+      const remaining = await getRemainingForSlotLocked(client, item.activityId, item.date, item.time, item.category);
       if (remaining < item.qty) {
         await client.query("ROLLBACK");
         throw new HttpError(

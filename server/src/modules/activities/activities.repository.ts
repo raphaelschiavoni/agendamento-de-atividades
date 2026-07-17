@@ -15,6 +15,17 @@ interface ActivityRow {
   allowed_dates: string[];
   weekday_capacities: Record<string, number> | null;
   schedule: ActivitySchedule | null;
+  category_capacities: Partial<Record<Category, number>> | null;
+}
+
+// Mantém apenas categorias válidas com números >= 0 (0 = categoria desabilitada).
+function normalizeCategoryCapacities(raw: Partial<Record<Category, number>> | null): Partial<Record<Category, number>> {
+  const out: Partial<Record<Category, number>> = {};
+  for (const c of CATEGORIES) {
+    const v = raw?.[c];
+    if (typeof v === "number" && Number.isFinite(v) && v >= 0) out[c] = Math.floor(v);
+  }
+  return out;
 }
 
 // Chaves do JSONB chegam como string; converte para números e descarta valores inválidos.
@@ -75,6 +86,7 @@ async function attachTimesAndPrices(rows: ActivityRow[]): Promise<ActivityDTO[]>
       schedule: r.schedule ?? {},
       times: timesByActivity.get(r.id) ?? [],
       prices,
+      categoryCapacities: normalizeCategoryCapacities(r.category_capacities),
     };
   });
 }
@@ -121,6 +133,7 @@ export interface UpsertActivityInput {
   schedule: ActivitySchedule;
   times: string[];
   prices: Record<Category, number>;
+  categoryCapacities: Partial<Record<Category, number>>;
 }
 
 function genActivityId(): string {
@@ -133,9 +146,9 @@ export async function createActivity(input: UpsertActivityInput): Promise<Activi
     await client.query("BEGIN");
     const id = genActivityId();
     await client.query(
-      `INSERT INTO activities (id, hotel_id, name, description, duration_min, capacity, active, photo_url, tags, weekdays, allowed_dates, weekday_capacities, schedule)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
-      [id, input.hotelId, input.name, input.description, input.durationMin, input.capacity, input.active, input.photo ?? null, input.tags, input.weekdays ?? [], input.allowedDates ?? [], JSON.stringify(input.weekdayCapacities ?? {}), JSON.stringify(input.schedule ?? {})]
+      `INSERT INTO activities (id, hotel_id, name, description, duration_min, capacity, active, photo_url, tags, weekdays, allowed_dates, weekday_capacities, schedule, category_capacities)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
+      [id, input.hotelId, input.name, input.description, input.durationMin, input.capacity, input.active, input.photo ?? null, input.tags, input.weekdays ?? [], input.allowedDates ?? [], JSON.stringify(input.weekdayCapacities ?? {}), JSON.stringify(input.schedule ?? {}), JSON.stringify(input.categoryCapacities ?? {})]
     );
     await insertTimesAndPrices(client, id, input.times, input.prices);
     await client.query("COMMIT");
@@ -165,6 +178,7 @@ export async function updateActivity(id: string, input: Partial<UpsertActivityIn
          allowed_dates = COALESCE($10, allowed_dates),
          weekday_capacities = COALESCE($11, weekday_capacities),
          schedule = COALESCE($12, schedule),
+         category_capacities = COALESCE($13, category_capacities),
          updated_at = now()
        WHERE id = $1
        RETURNING id`,
@@ -173,6 +187,7 @@ export async function updateActivity(id: string, input: Partial<UpsertActivityIn
         input.tags, input.weekdays, input.allowedDates,
         input.weekdayCapacities !== undefined ? JSON.stringify(input.weekdayCapacities) : null,
         input.schedule !== undefined ? JSON.stringify(input.schedule) : null,
+        input.categoryCapacities !== undefined ? JSON.stringify(input.categoryCapacities) : null,
       ]
     );
     if (rows.length === 0) {

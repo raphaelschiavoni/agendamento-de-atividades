@@ -5,8 +5,10 @@ export const listAllActivities = () => api.get<Activity[]>("/activities");
 
 export const getActivity = (id: string) => api.get<Activity>(`/activities/${id}`);
 
-export const getAvailability = (id: string, date: string) =>
-  api.get<{ date: string; times: SlotAvailability[] }>(`/activities/${id}/availability?date=${date}`);
+export const getAvailability = (id: string, date: string, category?: string) =>
+  api.get<{ date: string; times: SlotAvailability[] }>(
+    `/activities/${id}/availability?date=${date}${category ? `&category=${category}` : ""}`
+  );
 
 // admin
 export const listActivitiesAdmin = (hotelId: string) =>

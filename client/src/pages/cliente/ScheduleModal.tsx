@@ -27,8 +27,8 @@ export function ScheduleModal({
   const qty = adults + children;
 
   const { data } = useQuery({
-    queryKey: ["availability", activity.id, date],
-    queryFn: () => getAvailability(activity.id, date),
+    queryKey: ["availability", activity.id, date, category],
+    queryFn: () => getAvailability(activity.id, date, category),
     enabled: !!date,
   });
   // Agenda efetiva do dia escolhido: horários e capacidade de cada um.
