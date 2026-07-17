@@ -64,7 +64,7 @@ export default function App() {
         {view === "cliente" ? (
           <ClienteApp key={clienteKey} />
         ) : isLoading ? null : adminUser ? (
-          <AdminApp />
+          <AdminApp user={adminUser} />
         ) : (
           <LoginForm onLoggedIn={() => queryClient.invalidateQueries({ queryKey: ["auth-me"] })} />
         )}

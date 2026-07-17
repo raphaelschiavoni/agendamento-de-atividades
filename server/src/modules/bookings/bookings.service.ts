@@ -180,16 +180,8 @@ export async function finalizeBookingsFromCharge(chargeId: string) {
     await chargesRepo.markChargeApproved(client, charge.id);
     await client.query("COMMIT");
 
-    const notifier = getNotificationProvider();
-    for (const booking of createdBookings) {
-      await notifier.sendWhatsApp({
-        toNumber: await getHotelWaNumberSafe(booking.hotel_id),
-        hotelName: booking.hotel_name,
-        bookingId: booking.id,
-        message: await buildWhatsAppMessage(booking),
-      });
-    }
-
+    // O resumo no WhatsApp da recepção NÃO é disparado aqui: a reserva nasce
+    // 'pendente' e só notifica quando a Sala de Agendamento aprovar (approveBooking).
     return createdBookings.map(toBookingDTO);
   } catch (err) {
     try {
@@ -201,6 +193,23 @@ export async function finalizeBookingsFromCharge(chargeId: string) {
   } finally {
     client.release();
   }
+}
+
+/** Aprovação pela Sala de Agendamento: marca como aprovada e dispara o resumo no WhatsApp. */
+export async function approveBookingAndNotify(bookingId: string, approvedBy: string) {
+  const booking = await bookingsRepo.approveBooking(bookingId, approvedBy);
+  if (!booking) {
+    throw new HttpError(409, "Reserva não encontrada, já aprovada ou cancelada");
+  }
+  const notifier = getNotificationProvider();
+  await notifier.sendWhatsApp({
+    toNumber: await getHotelWaNumberSafe(booking.hotel_id),
+    hotelName: booking.hotel_name,
+    hotelId: booking.hotel_id,
+    bookingId: booking.id,
+    message: await buildWhatsAppMessage(booking),
+  });
+  return toBookingDTO(booking);
 }
 
 async function getHotelWaNumberSafe(hotelId: string): Promise<string> {
@@ -275,6 +284,7 @@ export function toBookingDTO(row: bookingsRepo.BookingRow) {
     guestHotelId: row.guest_hotel_id,
     roomNumber: row.room_number,
     status: row.status,
+    approvalStatus: row.approval_status,
     used: row.used,
     createdAt: row.created_at,
   };

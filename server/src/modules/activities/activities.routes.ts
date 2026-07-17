@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { asyncRoute } from "../../middleware/error-handler.js";
-import { requireAdmin } from "../auth/auth.middleware.js";
+import { requireAdmin, requireAdminRole } from "../auth/auth.middleware.js";
 import * as controller from "./activities.controller.js";
 
 export const activitiesRouter = Router();
@@ -9,7 +9,7 @@ activitiesRouter.get("/:id", asyncRoute(controller.getActivity));
 activitiesRouter.get("/:id/availability", asyncRoute(controller.getActivityAvailability));
 
 export const adminActivitiesRouter = Router();
-adminActivitiesRouter.use(requireAdmin);
+adminActivitiesRouter.use(requireAdmin, requireAdminRole);
 adminActivitiesRouter.get("/", asyncRoute(controller.listActivitiesAdmin));
 adminActivitiesRouter.post("/", asyncRoute(controller.createActivityAdmin));
 adminActivitiesRouter.patch("/:id", asyncRoute(controller.updateActivityAdmin));

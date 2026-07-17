@@ -4,7 +4,7 @@ import path from "node:path";
 import crypto from "node:crypto";
 import { readdir, stat } from "node:fs/promises";
 import { env } from "../../config/env.js";
-import { requireAdmin } from "../auth/auth.middleware.js";
+import { requireAdmin, requireAdminRole } from "../auth/auth.middleware.js";
 import { HttpError, asyncRoute } from "../../middleware/error-handler.js";
 
 const storage = multer.diskStorage({
@@ -25,7 +25,7 @@ const upload = multer({
 const IMG_RE = /\.(jpe?g|png|webp|avif|gif)$/i;
 
 export const adminUploadsRouter = Router();
-adminUploadsRouter.use(requireAdmin);
+adminUploadsRouter.use(requireAdmin, requireAdminRole);
 
 // Lista as fotos já enviadas (biblioteca de mídia), mais recentes primeiro.
 adminUploadsRouter.get(

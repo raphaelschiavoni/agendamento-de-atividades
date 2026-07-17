@@ -2,7 +2,8 @@ import { api } from "./client";
 import type { DashboardSummary, WhatsappLogEntry } from "../types";
 
 export const getDashboardSummary = () => api.get<DashboardSummary>("/admin/dashboard/summary");
-export const listWhatsappLog = () => api.get<WhatsappLogEntry[]>("/admin/whatsapp-log");
+export const listWhatsappLog = (hotelId?: string) =>
+  api.get<WhatsappLogEntry[]>(`/admin/whatsapp-log${hotelId && hotelId !== "all" ? `?hotelId=${hotelId}` : ""}`);
 
 export const uploadPhoto = async (file: File): Promise<{ url: string }> => {
   const form = new FormData();

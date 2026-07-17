@@ -7,9 +7,9 @@ export class ConsoleWhatsAppProvider implements NotificationProvider {
   async sendWhatsApp(input: SendWhatsAppInput): Promise<{ status: "enviado" | "falhou" }> {
     console.log(`[WhatsApp stub] -> ${input.toNumber} (${input.hotelName}):\n${input.message}`);
     await pool.query(
-      `INSERT INTO whatsapp_log (booking_id, to_number, hotel_name, message, status)
-       VALUES ($1, $2, $3, $4, 'enviado')`,
-      [input.bookingId ?? null, input.toNumber, input.hotelName, input.message]
+      `INSERT INTO whatsapp_log (booking_id, to_number, hotel_name, hotel_id, message, status)
+       VALUES ($1, $2, $3, $4, $5, 'enviado')`,
+      [input.bookingId ?? null, input.toNumber, input.hotelName, input.hotelId ?? null, input.message]
     );
     return { status: "enviado" };
   }

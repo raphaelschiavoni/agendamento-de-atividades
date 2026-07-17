@@ -1,6 +1,7 @@
 export interface SendWhatsAppInput {
   toNumber: string;
   hotelName: string;
+  hotelId?: string;
   message: string;
   bookingId?: string;
 }

@@ -24,6 +24,9 @@ export interface BookingRow {
   guest_hotel_id: string | null;
   room_number: string | null;
   status: "pendente" | "pago" | "cancelado";
+  approval_status: "pendente" | "aprovada";
+  approved_at: string | null;
+  approved_by: string | null;
   used: boolean;
   used_at: string | null;
   payment_ref: string | null;
@@ -48,8 +51,8 @@ export async function insertBookingFromCartItem(
     `INSERT INTO bookings (
        voucher_code, hotel_id, activity_id, activity_name, hotel_name, category,
        booking_date, booking_time, qty, adults, children, unit_price_cents, total_cents,
-       customer_name, customer_phone, customer_email, guest_hotel_id, room_number, status, payment_ref
-     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,'pago',$19)
+       customer_name, customer_phone, customer_email, guest_hotel_id, room_number, status, approval_status, payment_ref
+     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,'pago','pendente',$19)
      RETURNING *`,
     [
       voucherCode,
@@ -79,6 +82,7 @@ export async function insertBookingFromCartItem(
 export interface ListBookingsFilters {
   hotelId?: string;
   status?: "all" | "utilizado" | "cancelado" | "pendente-uso";
+  approvalStatus?: "pendente" | "aprovada";
   search?: string;
 }
 
@@ -94,6 +98,12 @@ export async function listBookings(filters: ListBookingsFilters): Promise<Bookin
   else if (filters.status === "cancelado") clauses.push("status = 'cancelado'");
   else if (filters.status === "pendente-uso") clauses.push("used = false AND status <> 'cancelado'");
 
+  if (filters.approvalStatus) {
+    params.push(filters.approvalStatus);
+    clauses.push(`approval_status = $${params.length}`);
+    if (filters.approvalStatus === "pendente") clauses.push("status <> 'cancelado'");
+  }
+
   if (filters.search) {
     params.push(`%${filters.search}%`);
     const idx = params.length;
@@ -106,6 +116,22 @@ export async function listBookings(filters: ListBookingsFilters): Promise<Bookin
     params
   );
   return rows;
+}
+
+export async function getBookingById(id: string): Promise<BookingRow | null> {
+  const { rows } = await pool.query<BookingRow>("SELECT * FROM bookings WHERE id = $1", [id]);
+  return rows[0] ?? null;
+}
+
+/** Aprova a reserva (Sala de Agendamento). Só transiciona se ainda estiver pendente. */
+export async function approveBooking(id: string, approvedBy: string): Promise<BookingRow | null> {
+  const { rows } = await pool.query<BookingRow>(
+    `UPDATE bookings SET approval_status = 'aprovada', approved_at = now(), approved_by = $2, updated_at = now()
+     WHERE id = $1 AND approval_status = 'pendente' AND status <> 'cancelado'
+     RETURNING *`,
+    [id, approvedBy]
+  );
+  return rows[0] ?? null;
 }
 
 export async function markBookingUsed(id: string): Promise<BookingRow | null> {

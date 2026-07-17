@@ -67,6 +67,7 @@ export interface Booking {
   guestHotelId: string | null;
   roomNumber: string | null;
   status: "pendente" | "pago" | "cancelado";
+  approvalStatus: "pendente" | "aprovada";
   used: boolean;
   createdAt: string;
 }
@@ -76,11 +77,14 @@ export interface SlotAvailability {
   remaining: number;
 }
 
+export type AdminRole = "admin" | "agendamento";
+
 export interface AdminUser {
   id: string;
   email: string;
   name: string;
-  role: string;
+  role: AdminRole;
+  hotelId: string | null; // hotel vinculado (Sala de Agendamento); null = todos
 }
 
 export interface WhatsappLogEntry {
