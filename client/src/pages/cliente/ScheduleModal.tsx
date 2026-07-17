@@ -6,6 +6,7 @@ import { MonthCalendar } from "../../components/MonthCalendar";
 import { getAvailability } from "../../api/activities";
 import { CATEGORY_META } from "../../lib/constants";
 import { formatBRL, isoDate } from "../../lib/format";
+import { calendarDates, calendarWeekdays, slotsForDate } from "../../lib/schedule";
 import type { Activity, Category } from "../../types";
 
 export function ScheduleModal({
@@ -30,14 +31,11 @@ export function ScheduleModal({
     queryFn: () => getAvailability(activity.id, date),
     enabled: !!date,
   });
-  // Capacidade efetiva do dia escolhido (pode variar por dia da semana).
-  const effCap = (() => {
-    const wd = new Date(`${date}T12:00:00`).getDay();
-    const specific = activity.weekdayCapacities?.[wd];
-    return typeof specific === "number" && specific > 0 ? specific : activity.capacity;
-  })();
+  // Agenda efetiva do dia escolhido: horários e capacidade de cada um.
+  const daySlots = slotsForDate(activity, date);
+  const capOf = (t: string) => daySlots.find((s) => s.time === t)?.capacity ?? activity.capacity;
   const remainingByTime = new Map((data?.times ?? []).map((t) => [t.time, t.remaining]));
-  const remaining = time ? remainingByTime.get(time) ?? effCap : effCap;
+  const remaining = time ? remainingByTime.get(time) ?? capOf(time) : daySlots[0]?.capacity ?? activity.capacity;
 
   useEffect(() => {
     setAdults(1);
@@ -54,16 +52,17 @@ export function ScheduleModal({
         <MonthCalendar
           value={date}
           onChange={(d) => { setDate(d); setTime(null); }}
-          allowedWeekdays={activity.weekdays}
-          allowedDates={activity.allowedDates}
+          allowedWeekdays={calendarWeekdays(activity)}
+          allowedDates={calendarDates(activity)}
         />
       </div>
 
       <div className="mb-3">
         <div className="text-xs font-medium mb-1.5 opacity-70">Escolha o horário</div>
         <div className="flex flex-wrap gap-2">
-          {activity.times.map((t) => {
-            const left = remainingByTime.get(t) ?? activity.capacity;
+          {daySlots.length === 0 && <p className="text-xs opacity-60">Sem horários disponíveis nesta data.</p>}
+          {daySlots.map(({ time: t, capacity: cap }) => {
+            const left = remainingByTime.get(t) ?? cap;
             const full = left <= 0;
             return (
               <button

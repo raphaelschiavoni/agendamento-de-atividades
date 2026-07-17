@@ -25,8 +25,20 @@ export interface Activity {
   weekdays: number[]; // 0=Dom..6=Sáb; vazio = todos os dias
   allowedDates: string[]; // datas específicas 'YYYY-MM-DD' (complementam os dias da semana)
   weekdayCapacities: Record<number, number>; // vagas/horário por dia da semana (sobrepõe a padrão)
+  schedule: ActivitySchedule; // agenda por dia da semana + datas pontuais (preferida quando preenchida)
   times: string[];
   prices: Record<Category, number>;
+}
+
+// Um horário da agenda; capacity ausente => capacidade padrão da atividade.
+export interface ScheduleSlot {
+  time: string; // "HH:MM"
+  capacity?: number;
+}
+
+export interface ActivitySchedule {
+  weekdays?: Record<string, ScheduleSlot[]>; // "0".."6" (Dom..Sáb)
+  dates?: Record<string, ScheduleSlot[]>; // "YYYY-MM-DD" (datas pontuais)
 }
 
 export interface Customer {

@@ -28,8 +28,27 @@ export interface ActivityDTO {
   weekdays: number[]; // dias da semana permitidos (0=Dom..6=Sáb); vazio = todos os dias
   allowedDates: string[]; // datas específicas 'YYYY-MM-DD' (complementam os dias da semana)
   weekdayCapacities: Record<number, number>; // capacidade/horário por dia da semana (sobrepõe a padrão)
+  schedule: ActivitySchedule; // agenda por dia da semana + datas pontuais (preferida quando preenchida)
   times: string[];
   prices: Record<Category, number>;
+}
+
+// Um horário da agenda; capacity ausente => capacidade padrão da atividade.
+export interface ScheduleSlot {
+  time: string; // "HH:MM"
+  capacity?: number;
+}
+
+export interface ActivitySchedule {
+  weekdays?: Record<string, ScheduleSlot[]>; // chaves "0".."6" (Dom..Sáb)
+  dates?: Record<string, ScheduleSlot[]>; // chaves "YYYY-MM-DD" (datas pontuais)
+}
+
+export function scheduleHasContent(s: ActivitySchedule | null | undefined): boolean {
+  if (!s) return false;
+  const wd = Object.values(s.weekdays ?? {}).some((slots) => (slots?.length ?? 0) > 0);
+  const dt = Object.values(s.dates ?? {}).some((slots) => (slots?.length ?? 0) > 0);
+  return wd || dt;
 }
 
 /** Capacidade efetiva por horário numa data: a do dia da semana, se definida; senão a padrão. */

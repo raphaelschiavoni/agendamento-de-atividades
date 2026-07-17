@@ -1,9 +1,9 @@
 import { pool } from "../../db/pool.js";
 import { HttpError } from "../../middleware/error-handler.js";
-import { effectiveCapacity, type CartItemInput, type CustomerInput, type OrderInput } from "../../types.js";
+import type { CartItemInput, CustomerInput, OrderInput } from "../../types.js";
 import { getPaymentProvider } from "../payments/index.js";
 import { getNotificationProvider } from "../notifications/index.js";
-import { getRemainingForSlotLocked } from "../availability/availability.service.js";
+import { getEffectiveSlots, getRemainingForSlotLocked } from "../availability/availability.service.js";
 import * as chargesRepo from "./charges.repository.js";
 import type { CartSnapshotItem } from "./charges.repository.js";
 import * as bookingsRepo from "./bookings.repository.js";
@@ -22,12 +22,8 @@ async function enrichAndValidateCartItem(item: CartItemInput, order: ResolvedOrd
     hotel_id: string;
     hotel_name: string;
     price_cents: number;
-    capacity: number;
-    weekdays: number[];
-    allowed_dates: string[];
-    weekday_capacities: Record<string, number> | null;
   }>(
-    `SELECT a.name AS activity_name, a.hotel_id, h.name AS hotel_name, ap.price_cents, a.capacity, a.weekdays, a.allowed_dates, a.weekday_capacities
+    `SELECT a.name AS activity_name, a.hotel_id, h.name AS hotel_name, ap.price_cents
      FROM activities a
      JOIN hotels h ON h.id = a.hotel_id
      JOIN activity_prices ap ON ap.activity_id = a.id AND ap.category = $2
@@ -39,16 +35,14 @@ async function enrichAndValidateCartItem(item: CartItemInput, order: ResolvedOrd
 
   const row = rows[0];
 
-  // Se a atividade tem restrição de dias (semanais e/ou datas específicas),
-  // a data escolhida precisa cair num dia da semana permitido OU numa data específica.
-  const weekdays = row.weekdays ?? [];
-  const allowedDates = row.allowed_dates ?? [];
-  if (weekdays.length > 0 || allowedDates.length > 0) {
-    const weekday = new Date(`${item.date}T12:00:00`).getDay(); // 0=Dom..6=Sáb
-    const ok = weekdays.includes(weekday) || allowedDates.includes(item.date);
-    if (!ok) {
-      throw new HttpError(409, `${row.activity_name} não está disponível nessa data.`);
-    }
+  // Valida data + horário + capacidade pela agenda efetiva (fonte única).
+  const slots = await getEffectiveSlots(pool, item.activityId, item.date);
+  if (!slots || slots.length === 0) {
+    throw new HttpError(409, `${row.activity_name} não está disponível nessa data.`);
+  }
+  const slot = slots.find((s) => s.time === item.time.slice(0, 5));
+  if (!slot) {
+    throw new HttpError(409, `${row.activity_name} não possui o horário ${item.time} nessa data.`);
   }
   const adults = item.adults ?? item.qty;
   const children = item.children ?? 0;
@@ -60,8 +54,7 @@ async function enrichAndValidateCartItem(item: CartItemInput, order: ResolvedOrd
      WHERE activity_id = $1 AND booking_date = $2 AND booking_time = $3 AND status <> 'cancelado'`,
     [item.activityId, item.date, item.time]
   );
-  const capForDate = effectiveCapacity(row.capacity, row.weekday_capacities as Record<number, number> | null, item.date);
-  const remaining = capForDate - Number(occRows[0].occupied);
+  const remaining = slot.capacity - Number(occRows[0].occupied);
   if (item.qty > remaining) {
     throw new HttpError(409, `Vagas insuficientes para ${row.activity_name} em ${item.date} ${item.time}`);
   }

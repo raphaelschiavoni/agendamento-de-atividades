@@ -2,11 +2,30 @@ import { useState } from "react";
 import { Modal } from "../../components/Modal";
 import { Field } from "../../components/Field";
 import { PhotoField } from "../../components/PhotoField";
-import { AdminScheduleCalendar } from "../../components/AdminScheduleCalendar";
-import { CATEGORY_META, CATEGORY_ORDER, WEEKDAY_LABELS } from "../../lib/constants";
-import type { Activity, Category } from "../../types";
+import { AgendaEditor } from "../../components/AgendaEditor";
+import { scheduleHasContent } from "../../lib/schedule";
+import { CATEGORY_META, CATEGORY_ORDER } from "../../lib/constants";
+import type { Activity, ActivitySchedule, Category, ScheduleSlot } from "../../types";
 
 type FormState = Omit<Activity, "id" | "hotelId"> & { id?: string };
+
+// Monta a agenda inicial a partir do modelo legado (times + weekdays + capacidades),
+// para atividades criadas antes da agenda por dia.
+function scheduleFromLegacy(activity: Activity | null): ActivitySchedule {
+  if (activity && scheduleHasContent(activity.schedule)) return activity.schedule;
+  const times = activity?.times?.length ? activity.times : ["09:00", "14:00"];
+  const days = activity?.weekdays?.length ? activity.weekdays : [0, 1, 2, 3, 4, 5, 6];
+  const weekdays: Record<string, ScheduleSlot[]> = {};
+  for (const d of days) {
+    const cap = activity?.weekdayCapacities?.[d];
+    weekdays[String(d)] = times.map((t) => ({ time: t.slice(0, 5), capacity: cap }));
+  }
+  const dates: Record<string, ScheduleSlot[]> = {};
+  for (const date of activity?.allowedDates ?? []) {
+    dates[date] = times.map((t) => ({ time: t.slice(0, 5) }));
+  }
+  return { weekdays, dates };
+}
 
 export function ActivityEditor({
   activity,
@@ -23,49 +42,50 @@ export function ActivityEditor({
       description: "",
       durationMin: 60,
       capacity: 10,
-      times: ["09:00", "14:00"],
+      times: [],
       active: true,
       photo: "",
       tags: [],
       weekdays: [],
       allowedDates: [],
       weekdayCapacities: {},
+      schedule: {},
       prices: { hospede: 0, visitante: 0, dayuse: 0, passaporte: 0 },
     }
   );
-
-  function setWeekdayCapacity(d: number, value: string) {
-    setForm((f) => {
-      const caps = { ...(f.weekdayCapacities ?? {}) };
-      const n = Number(value);
-      if (!value.trim() || !Number.isFinite(n) || n <= 0) delete caps[d];
-      else caps[d] = Math.floor(n);
-      return { ...f, weekdayCapacities: caps };
-    });
-  }
-
-  function toggleWeekday(d: number) {
-    setForm((f) => {
-      const set = new Set(f.weekdays);
-      set.has(d) ? set.delete(d) : set.add(d);
-      return { ...f, weekdays: Array.from(set).sort((a, b) => a - b) };
-    });
-  }
-
-  function toggleDate(iso: string) {
-    setForm((f) => {
-      const set = new Set(f.allowedDates ?? []);
-      set.has(iso) ? set.delete(iso) : set.add(iso);
-      return { ...f, allowedDates: Array.from(set).sort() };
-    });
-  }
-  const [timesText, setTimesText] = useState((activity?.times || ["09:00", "14:00"]).join(", "));
+  const [schedule, setSchedule] = useState<ActivitySchedule>(() => scheduleFromLegacy(activity));
   const [tagsText, setTagsText] = useState((activity?.tags || []).join(", "));
 
   function submit() {
-    const times = timesText.split(",").map((t) => t.trim()).filter(Boolean);
     const tags = tagsText.split(",").map((t) => t.trim()).filter(Boolean);
-    onSave({ ...form, times, tags });
+
+    // Limpa a agenda (remove dias/datas sem horários) e deriva os campos legados
+    // (times/weekdays/allowedDates) para exibição e retrocompatibilidade.
+    const weekdays: Record<string, ScheduleSlot[]> = {};
+    for (const [d, slots] of Object.entries(schedule.weekdays ?? {})) {
+      if ((slots?.length ?? 0) > 0) weekdays[d] = slots;
+    }
+    const dates: Record<string, ScheduleSlot[]> = {};
+    for (const [date, slots] of Object.entries(schedule.dates ?? {})) {
+      if ((slots?.length ?? 0) > 0) dates[date] = slots;
+    }
+    const cleaned: ActivitySchedule = { weekdays, dates };
+
+    const allTimes = new Set<string>();
+    for (const slots of [...Object.values(weekdays), ...Object.values(dates)]) {
+      for (const s of slots) allTimes.add(s.time.slice(0, 5));
+    }
+    const weekdayNums = Object.keys(weekdays).map(Number).sort((a, b) => a - b);
+
+    onSave({
+      ...form,
+      tags,
+      schedule: cleaned,
+      times: Array.from(allTimes).sort(),
+      weekdays: weekdayNums.length === 7 ? [] : weekdayNums,
+      allowedDates: Object.keys(dates).sort(),
+      weekdayCapacities: {},
+    });
   }
 
   return (
@@ -84,42 +104,15 @@ export function ActivityEditor({
         </div>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Duração (min)" value={form.durationMin} onChange={(v) => setForm((f) => ({ ...f, durationMin: Number(v) || 0 }))} />
-          <Field label="Capacidade por horário" value={form.capacity} onChange={(v) => setForm((f) => ({ ...f, capacity: Number(v) || 0 }))} />
-        </div>
-        <Field label="Horários (separados por vírgula)" value={timesText} onChange={setTimesText} placeholder="09:00, 11:00, 14:00" />
-
-        <div>
-          <label className="text-xs font-medium opacity-70 mb-1 block">Dias disponíveis</label>
-          <AdminScheduleCalendar
-            weekdays={form.weekdays}
-            onToggleWeekday={toggleWeekday}
-            allowedDates={form.allowedDates ?? []}
-            onToggleDate={toggleDate}
-          />
+          <Field label="Vagas padrão por horário" value={form.capacity} onChange={(v) => setForm((f) => ({ ...f, capacity: Number(v) || 0 }))} />
         </div>
 
         <div>
-          <label className="text-xs font-medium opacity-70 mb-1 block">
-            Vagas por horário em cada dia (deixe em branco para usar o padrão: {form.capacity})
-          </label>
-          <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(70px, 1fr))" }}>
-            {(form.weekdays.length > 0 ? form.weekdays : [0, 1, 2, 3, 4, 5, 6]).map((d) => (
-              <div key={d}>
-                <label className="text-xs opacity-60 block text-center">{WEEKDAY_LABELS[d]}</label>
-                <input
-                  type="number"
-                  min={1}
-                  value={form.weekdayCapacities?.[d] ?? ""}
-                  onChange={(e) => setWeekdayCapacity(d, e.target.value)}
-                  placeholder={String(form.capacity)}
-                  className="w-full rounded-md px-2 py-1.5 text-sm text-center"
-                  style={{ border: "1px solid var(--line)" }}
-                />
-              </div>
-            ))}
-          </div>
+          <label className="text-xs font-medium opacity-70 mb-1 block">Agenda da semana</label>
+          <AgendaEditor schedule={schedule} onChange={setSchedule} defaultCapacity={form.capacity} />
           <p className="text-xs opacity-50 mt-1">
-            Ex.: Seg 8, Ter 6, Qua 10 — cada horário daquele dia passa a ter essas vagas.
+            Cada dia tem seus horários, e cada horário suas vagas (em branco = padrão {form.capacity}).
+            Use "Datas pontuais" para eventos em dias específicos.
           </p>
         </div>
 
