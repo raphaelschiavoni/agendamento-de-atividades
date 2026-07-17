@@ -1,8 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { listHotels, getHotelActivities } from "../../api/hotels";
 import { listAllActivities } from "../../api/activities";
 import { createCharge, simulateApprove } from "../../api/bookings";
+import { findHotelBySlug, slugForHotel } from "../../lib/slug";
 import { Navigation, Rotate3d } from "lucide-react";
 import { BackRow } from "../../components/BackRow";
 import { FloatingCartButton } from "../../components/FloatingCartButton";
@@ -20,7 +21,7 @@ import type { Activity, Booking, CartItem, Category, Customer } from "../../type
 
 type Stage = "browse" | "cart" | "checkout" | "revisao" | "payment" | "done";
 
-export function ClienteApp() {
+export function ClienteApp({ lockedSlug = null }: { lockedSlug?: string | null }) {
   const [hotelId, setHotelId] = useState<string | null>(null);
   const [category, setCategory] = useState<Category>("hospede");
   const [passFilter, setPassFilter] = useState<string>("all"); // filtro de hotel no modo Passaporte
@@ -52,6 +53,27 @@ export function ClienteApp() {
     queryFn: listAllActivities,
     enabled: isPassaporteMode,
   });
+
+  // Página própria do hotel (/campo, /parque...): abre direto e trava naquele hotel.
+  const lockedHotel = useMemo(
+    () => (lockedSlug ? findHotelBySlug(hotels, lockedSlug) ?? null : null),
+    [hotels, lockedSlug]
+  );
+  useEffect(() => {
+    if (lockedHotel && !hotelId) setHotelId(lockedHotel.id);
+  }, [lockedHotel, hotelId]);
+  const isLocked = !!lockedHotel;
+
+  // Ao escolher um hotel na lista, a URL passa a refletir a página dele (compartilhável).
+  function pickHotel(id: string) {
+    setHotelId(id);
+    const h = hotels.find((x) => x.id === id);
+    if (h) window.history.replaceState(null, "", `/${slugForHotel(h)}`);
+  }
+  function backToHotels() {
+    setHotelId(null);
+    window.history.replaceState(null, "", "/");
+  }
 
   const hotel = hotels.find((h) => h.id === hotelId);
   const activeActivities = useMemo(() => activities.filter((a) => a.active), [activities]);
@@ -141,7 +163,8 @@ export function ClienteApp() {
     setPixCode("");
     setPaidVouchers([]);
     setStage("browse");
-    setHotelId(null);
+    // Na página própria do hotel, "nova reserva" permanece no mesmo hotel.
+    setHotelId(isLocked ? lockedHotel!.id : null);
     setCategory("hospede");
     setPassFilter("all");
   }
@@ -208,8 +231,9 @@ export function ClienteApp() {
   }
 
   if (!hotelId) {
-    if (hotelsLoading) {
-      return <p className="text-center text-sm opacity-60 p-10">Carregando hotéis…</p>;
+    // Numa página de hotel (/campo...), não mostra o seletor enquanto resolve o hotel.
+    if (hotelsLoading || (lockedSlug && lockedHotel)) {
+      return <p className="text-center text-sm opacity-60 p-10">Carregando…</p>;
     }
     if (hotelsError) {
       return (
@@ -220,12 +244,19 @@ export function ClienteApp() {
         </div>
       );
     }
-    return <HotelPicker hotels={hotels} onPick={setHotelId} />;
+    return <HotelPicker hotels={hotels} onPick={pickHotel} />;
   }
 
   return (
     <div className="p-5 max-w-6xl mx-auto">
-      <BackRow label={hotel?.name ?? ""} sub={hotel?.city ?? ""} onBack={() => setHotelId(null)} />
+      {isLocked ? (
+        <div>
+          <div style={{ fontFamily: "Georgia, serif", color: "var(--forest)" }} className="text-lg leading-tight">{hotel?.name ?? ""}</div>
+          <div className="text-xs opacity-60">{hotel?.city ?? ""}</div>
+        </div>
+      ) : (
+        <BackRow label={hotel?.name ?? ""} sub={hotel?.city ?? ""} onBack={backToHotels} />
+      )}
 
       {(hotel?.tour360Url || hotel?.mapUrl) && (
         <div className="flex flex-wrap gap-2 mt-2">

@@ -6,6 +6,7 @@ import { WhatsAppFloat } from "./components/WhatsAppFloat";
 import { ClienteApp } from "./pages/cliente/ClienteApp";
 import { AdminApp } from "./pages/admin/AdminApp";
 import { LoginForm } from "./pages/admin/LoginForm";
+import { slugFromLocation } from "./lib/slug";
 import * as authApi from "./api/auth";
 
 type View = "cliente" | "admin";
@@ -15,6 +16,8 @@ type Theme = "light" | "dark";
 export default function App() {
   const [view, setView] = useState<View>("cliente");
   const [theme, setTheme] = useState<Theme>(() => (localStorage.getItem("theme") as Theme) || "light");
+  // Página própria do hotel: entrar por /campo, /parque etc. trava o site naquele hotel.
+  const [lockedSlug] = useState<string>(() => slugFromLocation());
   // Muda ao clicar na logo: remonta o fluxo do cliente, voltando à tela inicial.
   const [clienteKey, setClienteKey] = useState(0);
   const queryClient = useQueryClient();
@@ -62,7 +65,7 @@ export default function App() {
       />
       <div style={{ flex: 1 }}>
         {view === "cliente" ? (
-          <ClienteApp key={clienteKey} />
+          <ClienteApp key={clienteKey} lockedSlug={lockedSlug || null} />
         ) : isLoading ? null : adminUser ? (
           <AdminApp user={adminUser} />
         ) : (
