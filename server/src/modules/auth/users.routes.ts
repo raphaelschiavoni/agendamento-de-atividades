@@ -20,8 +20,8 @@ adminUsersRouter.post(
     const { email, password, name, role, hotelId } = req.body ?? {};
     if (!email || !password || !name) throw new HttpError(400, "Informe nome, email e senha");
     if (role && role !== "admin" && role !== "agendamento") throw new HttpError(400, "Papel inválido");
-    if (role === "agendamento" && !hotelId) throw new HttpError(400, "Selecione o hotel da Sala de Agendamento");
-    const user = await authService.createAdminUser(email, password, name, role ?? "agendamento", hotelId ?? null);
+    // Sala de Agendamento pode ser vinculada a 1 hotel (vê só o dele) ou a nenhum (vê todos).
+    const user = await authService.createAdminUser(email, password, name, role ?? "agendamento", hotelId || null);
     if (!user) throw new HttpError(409, "Já existe um usuário com esse email");
     res.status(201).json(user);
   })

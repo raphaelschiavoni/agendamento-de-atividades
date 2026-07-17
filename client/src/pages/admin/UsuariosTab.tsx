@@ -20,7 +20,7 @@ export function UsuariosTab({ me }: { me: AdminUser }) {
   const [error, setError] = useState<string | null>(null);
 
   const createMutation = useMutation({
-    mutationFn: () => createUser({ name, email, password, role, hotelId: role === "agendamento" ? hotelId : null }),
+    mutationFn: () => createUser({ name, email, password, role, hotelId: role === "agendamento" ? (hotelId || null) : null }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
       setName(""); setEmail(""); setPassword(""); setHotelId(""); setError(null);
@@ -34,7 +34,7 @@ export function UsuariosTab({ me }: { me: AdminUser }) {
   });
 
   const hotelName = (id: string | null) => hotels.find((h) => h.id === id)?.name ?? "—";
-  const valid = name.trim() && email.trim() && password.length >= 6 && (role === "admin" || hotelId);
+  const valid = name.trim() && email.trim() && password.length >= 6;
 
   return (
     <div className="grid gap-5" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))" }}>
@@ -60,16 +60,21 @@ export function UsuariosTab({ me }: { me: AdminUser }) {
           </div>
           {role === "agendamento" && (
             <div>
-              <label className="text-xs font-medium opacity-70 block mb-1">Hotel da sala</label>
+              <label className="text-xs font-medium opacity-70 block mb-1">O que este acesso enxerga</label>
               <select
                 value={hotelId}
                 onChange={(e) => setHotelId(e.target.value)}
                 className="w-full rounded-md px-3 py-2 text-sm"
                 style={{ border: "1px solid var(--line)", background: "var(--paper)" }}
               >
-                <option value="">Selecione o hotel…</option>
-                {hotels.map((h) => <option key={h.id} value={h.id}>{h.name}</option>)}
+                <option value="">Todos os hotéis (rede inteira)</option>
+                {hotels.map((h) => <option key={h.id} value={h.id}>Somente {h.name}</option>)}
               </select>
+              <p className="text-xs opacity-50 mt-1">
+                {hotelId
+                  ? "Verá e aprovará apenas as reservas deste hotel."
+                  : "Verá e aprovará as reservas de todos os hotéis, com filtro por hotel."}
+              </p>
             </div>
           )}
           {error && <p className="text-xs" style={{ color: "var(--danger)" }}>{error}</p>}
@@ -95,7 +100,7 @@ export function UsuariosTab({ me }: { me: AdminUser }) {
                   {u.name} {u.id === me.id && <span className="text-xs opacity-50">(você)</span>}
                 </div>
                 <div className="text-xs opacity-60">
-                  {u.email} · {u.role === "admin" ? "Administrador" : `Sala de Agendamento — ${hotelName(u.hotelId)}`}
+                  {u.email} · {u.role === "admin" ? "Administrador" : `Sala de Agendamento — ${u.hotelId ? hotelName(u.hotelId) : "Todos os hotéis"}`}
                 </div>
               </div>
               {u.id !== me.id && (
