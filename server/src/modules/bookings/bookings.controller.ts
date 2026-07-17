@@ -56,7 +56,9 @@ export async function listBookingsAdmin(req: Request, res: Response) {
         : undefined,
     search: typeof req.query.search === "string" ? req.query.search : undefined,
   });
-  res.json(bookings.map(service.toBookingDTO));
+  let dtos = bookings.map(service.toBookingDTO);
+  if (req.query.withOccupancy === "1") dtos = await service.attachOccupancy(dtos);
+  res.json(dtos);
 }
 
 export async function approveBookingAdmin(req: Request, res: Response) {

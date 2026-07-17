@@ -85,11 +85,15 @@ export interface Booking {
   approvalStatus: "pendente" | "aprovada";
   used: boolean;
   createdAt: string;
+  // Lotação do horário (só na Sala de Agendamento, com withOccupancy).
+  slotCapacity?: number;
+  slotRemaining?: number;
 }
 
 export interface SlotAvailability {
   time: string;
   remaining: number;
+  capacity: number;
 }
 
 export type AdminRole = "admin" | "agendamento";

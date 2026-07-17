@@ -3,7 +3,7 @@ import { HttpError } from "../../middleware/error-handler.js";
 import type { CartItemInput, CustomerInput, OrderInput } from "../../types.js";
 import { getPaymentProvider } from "../payments/index.js";
 import { getNotificationProvider } from "../notifications/index.js";
-import { getEffectiveSlots, getRemainingForSlotLocked } from "../availability/availability.service.js";
+import { getAvailabilityForDate, getEffectiveSlots, getRemainingForSlotLocked } from "../availability/availability.service.js";
 import * as chargesRepo from "./charges.repository.js";
 import type { CartSnapshotItem } from "./charges.repository.js";
 import * as bookingsRepo from "./bookings.repository.js";
@@ -282,4 +282,24 @@ export function toBookingDTO(row: bookingsRepo.BookingRow) {
     used: row.used,
     createdAt: row.created_at,
   };
+}
+
+type BookingDTO = ReturnType<typeof toBookingDTO> & { slotCapacity?: number; slotRemaining?: number };
+
+/** Anexa a lotação do horário (capacidade e vagas restantes) a cada reserva —
+ *  usado pela Sala de Agendamento para colorir os cards por ocupação. */
+export async function attachOccupancy(dtos: BookingDTO[]): Promise<BookingDTO[]> {
+  const distinct = new Map<string, { activityId: string; date: string }>();
+  for (const b of dtos) distinct.set(`${b.activityId}|${b.date}`, { activityId: b.activityId, date: b.date });
+
+  const byKey = new Map<string, Map<string, { capacity: number; remaining: number }>>();
+  for (const { activityId, date } of distinct.values()) {
+    const slots = await getAvailabilityForDate(activityId, date);
+    byKey.set(`${activityId}|${date}`, new Map(slots.map((s) => [s.time, { capacity: s.capacity, remaining: s.remaining }])));
+  }
+
+  return dtos.map((b) => {
+    const slot = byKey.get(`${b.activityId}|${b.date}`)?.get(b.time);
+    return slot ? { ...b, slotCapacity: slot.capacity, slotRemaining: slot.remaining } : b;
+  });
 }

@@ -5,6 +5,7 @@ import { effectiveCapacity, scheduleHasContent, type ActivitySchedule } from "..
 export interface SlotAvailability {
   time: string;
   remaining: number;
+  capacity: number;
 }
 
 export interface EffectiveSlot {
@@ -105,7 +106,7 @@ export async function getAvailabilityForDate(
     const occ = byTime.get(s.time) ?? { total: 0, cat: 0 };
     let remaining = s.capacity - occ.total;
     if (quota !== null && quota > 0) remaining = Math.min(remaining, quota - occ.cat);
-    return { time: s.time, remaining: Math.max(0, remaining) };
+    return { time: s.time, remaining: Math.max(0, remaining), capacity: s.capacity };
   });
 }
 

@@ -46,6 +46,7 @@ export interface ListBookingsFilters {
   status?: "all" | "utilizado" | "cancelado" | "pendente-uso";
   approvalStatus?: "pendente" | "aprovada";
   search?: string;
+  withOccupancy?: boolean; // anexa lotação do horário (Sala de Agendamento)
 }
 
 export const listBookingsAdmin = (filters: ListBookingsFilters) => {
@@ -54,6 +55,7 @@ export const listBookingsAdmin = (filters: ListBookingsFilters) => {
   if (filters.status) params.set("status", filters.status);
   if (filters.approvalStatus) params.set("approvalStatus", filters.approvalStatus);
   if (filters.search) params.set("search", filters.search);
+  if (filters.withOccupancy) params.set("withOccupancy", "1");
   return api.get<Booking[]>(`/admin/bookings?${params.toString()}`);
 };
 
