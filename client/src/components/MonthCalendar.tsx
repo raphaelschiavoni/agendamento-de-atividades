@@ -12,10 +12,12 @@ export function MonthCalendar({
   value,
   onChange,
   allowedWeekdays,
+  allowedDates,
 }: {
   value: string | null;
   onChange: (date: string) => void;
   allowedWeekdays?: number[]; // 0=Dom..6=Sáb; vazio/undefined = todos os dias
+  allowedDates?: string[]; // datas específicas 'YYYY-MM-DD' que também liberam o dia
 }) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -70,7 +72,9 @@ export function MonthCalendar({
           if (!d) return <div key={`e${i}`} />;
           const iso = isoDate(d);
           const isPast = d < today;
-          const notAllowed = allowedWeekdays && allowedWeekdays.length > 0 && !allowedWeekdays.includes(d.getDay());
+          const hasRestriction = (allowedWeekdays?.length ?? 0) > 0 || (allowedDates?.length ?? 0) > 0;
+          const notAllowed =
+            hasRestriction && !(allowedWeekdays?.includes(d.getDay()) || allowedDates?.includes(iso));
           const disabled = isPast || !!notAllowed;
           const isSelected = value === iso;
           return (
@@ -78,7 +82,7 @@ export function MonthCalendar({
               key={iso}
               disabled={disabled}
               onClick={() => onChange(iso)}
-              title={notAllowed ? "Indisponível neste dia da semana" : undefined}
+              title={notAllowed ? "Indisponível nesta data" : undefined}
               className="rounded-md text-sm"
               style={{
                 padding: "7px 0",

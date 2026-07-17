@@ -23,6 +23,7 @@ export interface Activity {
   photo: string | null;
   tags: string[];
   weekdays: number[]; // 0=Dom..6=Sáb; vazio = todos os dias
+  allowedDates: string[]; // datas específicas 'YYYY-MM-DD' (complementam os dias da semana)
   times: string[];
   prices: Record<Category, number>;
 }

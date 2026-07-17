@@ -12,6 +12,7 @@ interface ActivityRow {
   photo_url: string | null;
   tags: string[];
   weekdays: number[];
+  allowed_dates: string[];
 }
 
 async function attachTimesAndPrices(rows: ActivityRow[]): Promise<ActivityDTO[]> {
@@ -56,6 +57,7 @@ async function attachTimesAndPrices(rows: ActivityRow[]): Promise<ActivityDTO[]>
       photo: r.photo_url,
       tags: r.tags,
       weekdays: r.weekdays ?? [],
+      allowedDates: r.allowed_dates ?? [],
       times: timesByActivity.get(r.id) ?? [],
       prices,
     };
@@ -99,6 +101,7 @@ export interface UpsertActivityInput {
   photo?: string;
   tags: string[];
   weekdays: number[];
+  allowedDates: string[];
   times: string[];
   prices: Record<Category, number>;
 }
@@ -113,9 +116,9 @@ export async function createActivity(input: UpsertActivityInput): Promise<Activi
     await client.query("BEGIN");
     const id = genActivityId();
     await client.query(
-      `INSERT INTO activities (id, hotel_id, name, description, duration_min, capacity, active, photo_url, tags, weekdays)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
-      [id, input.hotelId, input.name, input.description, input.durationMin, input.capacity, input.active, input.photo ?? null, input.tags, input.weekdays ?? []]
+      `INSERT INTO activities (id, hotel_id, name, description, duration_min, capacity, active, photo_url, tags, weekdays, allowed_dates)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+      [id, input.hotelId, input.name, input.description, input.durationMin, input.capacity, input.active, input.photo ?? null, input.tags, input.weekdays ?? [], input.allowedDates ?? []]
     );
     await insertTimesAndPrices(client, id, input.times, input.prices);
     await client.query("COMMIT");
@@ -142,10 +145,11 @@ export async function updateActivity(id: string, input: Partial<UpsertActivityIn
          photo_url = COALESCE($7, photo_url),
          tags = COALESCE($8, tags),
          weekdays = COALESCE($9, weekdays),
+         allowed_dates = COALESCE($10, allowed_dates),
          updated_at = now()
        WHERE id = $1
        RETURNING id`,
-      [id, input.name, input.description, input.durationMin, input.capacity, input.active, input.photo, input.tags, input.weekdays]
+      [id, input.name, input.description, input.durationMin, input.capacity, input.active, input.photo, input.tags, input.weekdays, input.allowedDates]
     );
     if (rows.length === 0) {
       await client.query("ROLLBACK");

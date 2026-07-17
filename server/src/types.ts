@@ -26,6 +26,7 @@ export interface ActivityDTO {
   photo: string | null;
   tags: string[];
   weekdays: number[]; // dias da semana permitidos (0=Dom..6=Sáb); vazio = todos os dias
+  allowedDates: string[]; // datas específicas 'YYYY-MM-DD' (complementam os dias da semana)
   times: string[];
   prices: Record<Category, number>;
 }

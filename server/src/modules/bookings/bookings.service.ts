@@ -24,8 +24,9 @@ async function enrichAndValidateCartItem(item: CartItemInput, order: ResolvedOrd
     price_cents: number;
     capacity: number;
     weekdays: number[];
+    allowed_dates: string[];
   }>(
-    `SELECT a.name AS activity_name, a.hotel_id, h.name AS hotel_name, ap.price_cents, a.capacity, a.weekdays
+    `SELECT a.name AS activity_name, a.hotel_id, h.name AS hotel_name, ap.price_cents, a.capacity, a.weekdays, a.allowed_dates
      FROM activities a
      JOIN hotels h ON h.id = a.hotel_id
      JOIN activity_prices ap ON ap.activity_id = a.id AND ap.category = $2
@@ -37,12 +38,15 @@ async function enrichAndValidateCartItem(item: CartItemInput, order: ResolvedOrd
 
   const row = rows[0];
 
-  // Se a atividade só acontece em certos dias da semana, valida a data escolhida.
+  // Se a atividade tem restrição de dias (semanais e/ou datas específicas),
+  // a data escolhida precisa cair num dia da semana permitido OU numa data específica.
   const weekdays = row.weekdays ?? [];
-  if (weekdays.length > 0) {
+  const allowedDates = row.allowed_dates ?? [];
+  if (weekdays.length > 0 || allowedDates.length > 0) {
     const weekday = new Date(`${item.date}T12:00:00`).getDay(); // 0=Dom..6=Sáb
-    if (!weekdays.includes(weekday)) {
-      throw new HttpError(409, `${row.activity_name} não está disponível nesse dia da semana.`);
+    const ok = weekdays.includes(weekday) || allowedDates.includes(item.date);
+    if (!ok) {
+      throw new HttpError(409, `${row.activity_name} não está disponível nessa data.`);
     }
   }
   const adults = item.adults ?? item.qty;
