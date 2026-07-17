@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { listHotels, getHotelActivities } from "../../api/hotels";
 import { listAllActivities } from "../../api/activities";
 import { createCharge, simulateApprove } from "../../api/bookings";
+import { Navigation, Rotate3d } from "lucide-react";
 import { BackRow } from "../../components/BackRow";
 import { FloatingCartButton } from "../../components/FloatingCartButton";
 import { HotelPicker } from "./HotelPicker";
@@ -225,6 +226,34 @@ export function ClienteApp() {
   return (
     <div className="p-5 max-w-6xl mx-auto">
       <BackRow label={hotel?.name ?? ""} sub={hotel?.city ?? ""} onBack={() => setHotelId(null)} />
+
+      {(hotel?.tour360Url || hotel?.mapUrl) && (
+        <div className="flex flex-wrap gap-2 mt-2">
+          {hotel?.tour360Url && (
+            <a
+              href={hotel.tour360Url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm"
+              style={{ border: "1px solid var(--line)", color: "var(--forest)" }}
+            >
+              <Rotate3d size={15} /> Tour Virtual 360°
+            </a>
+          )}
+          {hotel?.mapUrl && (
+            <a
+              href={hotel.mapUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm"
+              style={{ border: "1px solid var(--line)", color: "var(--forest)" }}
+            >
+              <Navigation size={15} /> Como chegar
+            </a>
+          )}
+        </div>
+      )}
+
       <div className="my-4">
         <CategoryPicker category={category} setCategory={setCategory} />
       </div>

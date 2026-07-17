@@ -7,6 +7,8 @@ export interface Hotel {
   address: string | null;
   email: string | null;
   photo: string | null;
+  tour360Url: string | null;
+  mapUrl: string | null;
   waNumber?: string;
 }
 
@@ -20,6 +22,7 @@ export interface Activity {
   active: boolean;
   photo: string | null;
   tags: string[];
+  weekdays: number[]; // 0=Dom..6=Sáb; vazio = todos os dias
   times: string[];
   prices: Record<Category, number>;
 }

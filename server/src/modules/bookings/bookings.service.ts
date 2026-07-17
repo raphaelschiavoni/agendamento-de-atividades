@@ -23,8 +23,9 @@ async function enrichAndValidateCartItem(item: CartItemInput, order: ResolvedOrd
     hotel_name: string;
     price_cents: number;
     capacity: number;
+    weekdays: number[];
   }>(
-    `SELECT a.name AS activity_name, a.hotel_id, h.name AS hotel_name, ap.price_cents, a.capacity
+    `SELECT a.name AS activity_name, a.hotel_id, h.name AS hotel_name, ap.price_cents, a.capacity, a.weekdays
      FROM activities a
      JOIN hotels h ON h.id = a.hotel_id
      JOIN activity_prices ap ON ap.activity_id = a.id AND ap.category = $2
@@ -35,6 +36,15 @@ async function enrichAndValidateCartItem(item: CartItemInput, order: ResolvedOrd
   if (item.qty < 1) throw new HttpError(400, "Quantidade deve ser maior que zero");
 
   const row = rows[0];
+
+  // Se a atividade só acontece em certos dias da semana, valida a data escolhida.
+  const weekdays = row.weekdays ?? [];
+  if (weekdays.length > 0) {
+    const weekday = new Date(`${item.date}T12:00:00`).getDay(); // 0=Dom..6=Sáb
+    if (!weekdays.includes(weekday)) {
+      throw new HttpError(409, `${row.activity_name} não está disponível nesse dia da semana.`);
+    }
+  }
   const adults = item.adults ?? item.qty;
   const children = item.children ?? 0;
 

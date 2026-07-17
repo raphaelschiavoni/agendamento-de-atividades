@@ -10,6 +10,8 @@ export interface HotelDTO {
   address: string | null;
   email: string | null;
   photo: string | null;
+  tour360Url: string | null; // link do tour virtual 360°
+  mapUrl: string | null; // link de rota/mapa (Google Maps)
   waNumber?: string; // only included on admin-facing responses
 }
 
@@ -23,6 +25,7 @@ export interface ActivityDTO {
   active: boolean;
   photo: string | null;
   tags: string[];
+  weekdays: number[]; // dias da semana permitidos (0=Dom..6=Sáb); vazio = todos os dias
   times: string[];
   prices: Record<Category, number>;
 }

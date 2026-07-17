@@ -18,6 +18,18 @@ export function HotelEditor({ hotel, onClose, onSave }: { hotel: Hotel; onClose:
           value={form.waNumber || ""}
           onChange={(v) => setForm((f) => ({ ...f, waNumber: v }))}
         />
+        <Field
+          label="Link do Tour Virtual 360° (opcional)"
+          value={form.tour360Url || ""}
+          onChange={(v) => setForm((f) => ({ ...f, tour360Url: v }))}
+          placeholder="https://..."
+        />
+        <Field
+          label="Link de rota/mapa — Como chegar (opcional)"
+          value={form.mapUrl || ""}
+          onChange={(v) => setForm((f) => ({ ...f, mapUrl: v }))}
+          placeholder="https://maps.google.com/..."
+        />
         <button
           onClick={() => onSave(form)}
           className="w-full rounded-md py-2 text-sm mt-2"

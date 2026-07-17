@@ -9,6 +9,8 @@ interface HotelRow {
   whatsapp_number: string;
   email: string | null;
   photo_url: string | null;
+  tour360_url: string | null;
+  map_url: string | null;
 }
 
 function toDTO(row: HotelRow, includeWa: boolean): HotelDTO {
@@ -19,6 +21,8 @@ function toDTO(row: HotelRow, includeWa: boolean): HotelDTO {
     address: row.address,
     email: row.email,
     photo: row.photo_url,
+    tour360Url: row.tour360_url,
+    mapUrl: row.map_url,
   };
   if (includeWa) dto.waNumber = row.whatsapp_number;
   return dto;
@@ -50,6 +54,8 @@ export interface UpdateHotelInput {
   waNumber?: string;
   email?: string;
   photo?: string;
+  tour360Url?: string;
+  mapUrl?: string;
 }
 
 export async function updateHotel(id: string, input: UpdateHotelInput): Promise<HotelDTO | null> {
@@ -61,10 +67,12 @@ export async function updateHotel(id: string, input: UpdateHotelInput): Promise<
        whatsapp_number = COALESCE($5, whatsapp_number),
        email = COALESCE($6, email),
        photo_url = COALESCE($7, photo_url),
+       tour360_url = COALESCE($8, tour360_url),
+       map_url = COALESCE($9, map_url),
        updated_at = now()
      WHERE id = $1
      RETURNING *`,
-    [id, input.name, input.city, input.address, input.waNumber, input.email, input.photo]
+    [id, input.name, input.city, input.address, input.waNumber, input.email, input.photo, input.tour360Url, input.mapUrl]
   );
   if (rows.length === 0) return null;
   return toDTO(rows[0], true);

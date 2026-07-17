@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Modal } from "../../components/Modal";
 import { Field } from "../../components/Field";
 import { PhotoField } from "../../components/PhotoField";
-import { CATEGORY_META, CATEGORY_ORDER } from "../../lib/constants";
+import { CATEGORY_META, CATEGORY_ORDER, WEEKDAY_LABELS } from "../../lib/constants";
 import type { Activity, Category } from "../../types";
 
 type FormState = Omit<Activity, "id" | "hotelId"> & { id?: string };
@@ -26,9 +26,18 @@ export function ActivityEditor({
       active: true,
       photo: "",
       tags: [],
+      weekdays: [],
       prices: { hospede: 0, visitante: 0, dayuse: 0, passaporte: 0 },
     }
   );
+
+  function toggleWeekday(d: number) {
+    setForm((f) => {
+      const set = new Set(f.weekdays);
+      set.has(d) ? set.delete(d) : set.add(d);
+      return { ...f, weekdays: Array.from(set).sort((a, b) => a - b) };
+    });
+  }
   const [timesText, setTimesText] = useState((activity?.times || ["09:00", "14:00"]).join(", "));
   const [tagsText, setTagsText] = useState((activity?.tags || []).join(", "));
 
@@ -57,6 +66,36 @@ export function ActivityEditor({
           <Field label="Capacidade por horário" value={form.capacity} onChange={(v) => setForm((f) => ({ ...f, capacity: Number(v) || 0 }))} />
         </div>
         <Field label="Horários (separados por vírgula)" value={timesText} onChange={setTimesText} placeholder="09:00, 11:00, 14:00" />
+
+        <div>
+          <label className="text-xs font-medium opacity-70 mb-1 block">Dias da semana</label>
+          <div className="flex flex-wrap gap-1.5">
+            {WEEKDAY_LABELS.map((label, d) => {
+              const active = form.weekdays.includes(d);
+              return (
+                <button
+                  key={d}
+                  type="button"
+                  onClick={() => toggleWeekday(d)}
+                  className="px-2.5 py-1 rounded-full text-xs"
+                  style={{
+                    background: active ? "var(--forest)" : "var(--paper)",
+                    color: active ? "var(--paper)" : "var(--bark)",
+                    border: "1px solid var(--line)",
+                  }}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-xs opacity-50 mt-1">
+            {form.weekdays.length === 0
+              ? "Disponível todos os dias. Selecione dias para restringir (ex.: só quarta e sexta)."
+              : "Disponível apenas nos dias selecionados."}
+          </p>
+        </div>
+
         <Field label="Etiquetas (separadas por vírgula)" value={tagsText} onChange={setTagsText} placeholder="Fácil, A partir de 3 anos, Acessível" />
         <PhotoField value={form.photo} onChange={(v) => setForm((f) => ({ ...f, photo: v }))} />
         <div>

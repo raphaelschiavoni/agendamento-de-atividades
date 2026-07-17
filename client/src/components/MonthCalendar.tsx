@@ -11,9 +11,11 @@ const MONTHS = [
 export function MonthCalendar({
   value,
   onChange,
+  allowedWeekdays,
 }: {
   value: string | null;
   onChange: (date: string) => void;
+  allowedWeekdays?: number[]; // 0=Dom..6=Sáb; vazio/undefined = todos os dias
 }) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -68,19 +70,22 @@ export function MonthCalendar({
           if (!d) return <div key={`e${i}`} />;
           const iso = isoDate(d);
           const isPast = d < today;
+          const notAllowed = allowedWeekdays && allowedWeekdays.length > 0 && !allowedWeekdays.includes(d.getDay());
+          const disabled = isPast || !!notAllowed;
           const isSelected = value === iso;
           return (
             <button
               key={iso}
-              disabled={isPast}
+              disabled={disabled}
               onClick={() => onChange(iso)}
+              title={notAllowed ? "Indisponível neste dia da semana" : undefined}
               className="rounded-md text-sm"
               style={{
                 padding: "7px 0",
                 background: isSelected ? "var(--forest)" : "transparent",
-                color: isSelected ? "var(--paper)" : isPast ? "var(--line)" : "var(--bark)",
+                color: isSelected ? "var(--paper)" : disabled ? "var(--line)" : "var(--bark)",
                 border: "1px solid " + (isSelected ? "var(--forest)" : "transparent"),
-                cursor: isPast ? "not-allowed" : "pointer",
+                cursor: disabled ? "not-allowed" : "pointer",
                 fontWeight: isSelected ? 600 : 400,
               }}
             >

@@ -45,7 +45,7 @@ export function ScheduleModal({
     <Modal onClose={onClose} title={activity.name}>
       <div className="mb-4">
         <div className="text-xs font-medium mb-1.5 opacity-70">Escolha a data</div>
-        <MonthCalendar value={date} onChange={(d) => { setDate(d); setTime(null); }} />
+        <MonthCalendar value={date} onChange={(d) => { setDate(d); setTime(null); }} allowedWeekdays={activity.weekdays} />
       </div>
 
       <div className="mb-3">
