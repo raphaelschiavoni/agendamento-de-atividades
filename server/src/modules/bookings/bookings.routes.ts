@@ -15,5 +15,6 @@ export const adminBookingsRouter = Router();
 adminBookingsRouter.use(requireAdmin);
 adminBookingsRouter.get("/", asyncRoute(controller.listBookingsAdmin));
 adminBookingsRouter.patch("/:id/approve", asyncRoute(controller.approveBookingAdmin));
+adminBookingsRouter.patch("/:id/edit", asyncRoute(controller.editBookingAdmin));
 adminBookingsRouter.patch("/:id/mark-used", asyncRoute(controller.markUsedAdmin));
 adminBookingsRouter.patch("/:id/cancel", asyncRoute(controller.cancelBookingAdmin));

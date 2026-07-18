@@ -63,5 +63,14 @@ export const listBookingsAdmin = (filters: ListBookingsFilters) => {
 
 export const approveBookingAdmin = (id: string) => api.patch<Booking>(`/admin/bookings/${id}/approve`);
 
+export interface EditBookingInput {
+  date?: string;
+  time?: string;
+  adults?: number;
+  children?: number;
+}
+export const editBookingAdmin = (id: string, input: EditBookingInput) =>
+  api.patch<Booking>(`/admin/bookings/${id}/edit`, input);
+
 export const markUsedAdmin = (id: string) => api.patch<Booking>(`/admin/bookings/${id}/mark-used`);
 export const cancelBookingAdmin = (id: string) => api.patch<Booking>(`/admin/bookings/${id}/cancel`);

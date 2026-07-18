@@ -1,17 +1,20 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarDays, Search, Trash2, X } from "lucide-react";
+import { CalendarDays, Pencil, Search, Trash2, X } from "lucide-react";
 import { listHotelsAdmin } from "../../api/hotels";
 import { cancelBookingAdmin, listBookingsAdmin, markUsedAdmin, type ListBookingsFilters } from "../../api/bookings";
 import { StatusBadge } from "../../components/StatusBadge";
+import { EditBookingModal } from "./EditBookingModal";
 import { CATEGORY_META } from "../../lib/constants";
 import { formatBRL, isoDate } from "../../lib/format";
+import type { Booking } from "../../types";
 
 export function VendasTab() {
   const [filterHotel, setFilterHotel] = useState("all");
   const [filterStatus, setFilterStatus] = useState<ListBookingsFilters["status"]>("all");
   const [filterDate, setFilterDate] = useState(""); // data da atividade; "" = todas
   const [search, setSearch] = useState("");
+  const [editing, setEditing] = useState<Booking | null>(null);
   const queryClient = useQueryClient();
 
   const hoje = isoDate(new Date());
@@ -117,9 +120,19 @@ export function VendasTab() {
               <span className="text-sm font-medium">{formatBRL(b.total)}</span>
               <StatusBadge booking={b} />
               {b.status !== "cancelado" && !b.used && (
-                <button onClick={() => markUsedMutation.mutate(b.id)} className="px-2 py-1 rounded-md text-xs" style={{ background: "var(--moss)", color: "#fff" }}>
-                  Marcar utilizado
-                </button>
+                <>
+                  <button
+                    onClick={() => setEditing(b)}
+                    className="flex items-center gap-1 px-2 py-1 rounded-md text-xs"
+                    style={{ border: "1px solid var(--line)", color: "var(--forest)" }}
+                    title="Editar horário/participantes"
+                  >
+                    <Pencil size={12} /> Editar
+                  </button>
+                  <button onClick={() => markUsedMutation.mutate(b.id)} className="px-2 py-1 rounded-md text-xs" style={{ background: "var(--moss)", color: "#fff" }}>
+                    Marcar utilizado
+                  </button>
+                </>
               )}
               {b.status !== "cancelado" && (
                 <button
@@ -134,6 +147,18 @@ export function VendasTab() {
         ))}
         {bookings.length === 0 && <p className="text-sm opacity-60">Nenhuma venda encontrada com esses filtros.</p>}
       </div>
+
+      {editing && (
+        <EditBookingModal
+          booking={editing}
+          onClose={() => setEditing(null)}
+          onSaved={() => {
+            setEditing(null);
+            queryClient.invalidateQueries({ queryKey: ["bookings-admin"] });
+            queryClient.invalidateQueries({ queryKey: ["bookings-pendentes"] });
+          }}
+        />
+      )}
     </div>
   );
 }

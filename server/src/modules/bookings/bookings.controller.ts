@@ -68,6 +68,20 @@ export async function approveBookingAdmin(req: Request, res: Response) {
   res.json(dto);
 }
 
+export async function editBookingAdmin(req: Request, res: Response) {
+  await assertBookingAccess(req, req.params.id);
+  const { date, time, adults, children } = req.body ?? {};
+  if (date !== undefined && !/^\d{4}-\d{2}-\d{2}$/.test(String(date))) throw new HttpError(400, "Data inválida");
+  if (time !== undefined && !/^\d{2}:\d{2}/.test(String(time))) throw new HttpError(400, "Horário inválido");
+  const dto = await service.editBooking(req.params.id, {
+    date,
+    time,
+    adults: adults !== undefined ? Number(adults) : undefined,
+    children: children !== undefined ? Number(children) : undefined,
+  });
+  res.json(dto);
+}
+
 export async function markUsedAdmin(req: Request, res: Response) {
   await assertBookingAccess(req, req.params.id);
   const booking = await repo.markBookingUsed(req.params.id);

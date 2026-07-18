@@ -140,6 +140,27 @@ export async function approveBooking(id: string, approvedBy: string): Promise<Bo
   return rows[0] ?? null;
 }
 
+export async function getBookingByIdForUpdate(client: PoolClient, id: string): Promise<BookingRow | null> {
+  const { rows } = await client.query<BookingRow>("SELECT * FROM bookings WHERE id = $1 FOR UPDATE", [id]);
+  return rows[0] ?? null;
+}
+
+/** Atualiza data/horário/participantes da reserva (edição pela operação). */
+export async function updateBookingDetails(
+  client: PoolClient,
+  id: string,
+  fields: { date: string; time: string; qty: number; adults: number; children: number; totalCents: number }
+): Promise<BookingRow | null> {
+  const { rows } = await client.query<BookingRow>(
+    `UPDATE bookings
+       SET booking_date = $2, booking_time = $3, qty = $4, adults = $5, children = $6, total_cents = $7, updated_at = now()
+     WHERE id = $1
+     RETURNING *`,
+    [id, fields.date, fields.time, fields.qty, fields.adults, fields.children, fields.totalCents]
+  );
+  return rows[0] ?? null;
+}
+
 export async function markBookingUsed(id: string): Promise<BookingRow | null> {
   const { rows } = await pool.query<BookingRow>(
     "UPDATE bookings SET used = true, used_at = now(), updated_at = now() WHERE id = $1 RETURNING *",

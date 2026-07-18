@@ -206,6 +206,82 @@ export async function approveBookingAndNotify(bookingId: string, approvedBy: str
   return toBookingDTO(booking);
 }
 
+export interface EditBookingInput {
+  date?: string;
+  time?: string;
+  adults?: number;
+  children?: number;
+}
+
+/** Edição de reserva pela operação (mudar horário/data ou nº de participantes),
+ *  revalidando a vaga no horário-alvo dentro de uma transação com lock. */
+export async function editBooking(bookingId: string, input: EditBookingInput) {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const booking = await bookingsRepo.getBookingByIdForUpdate(client, bookingId);
+    if (!booking) {
+      await client.query("ROLLBACK");
+      throw new HttpError(404, "Reserva não encontrada");
+    }
+    if (booking.status === "cancelado") {
+      await client.query("ROLLBACK");
+      throw new HttpError(409, "Reserva cancelada não pode ser editada");
+    }
+
+    const newDate = input.date ?? booking.booking_date;
+    const newTime = (input.time ?? booking.booking_time).slice(0, 5);
+    const adults = input.adults ?? booking.adults;
+    const children = input.children ?? booking.children;
+    if (adults < 1) {
+      await client.query("ROLLBACK");
+      throw new HttpError(400, "É necessário ao menos 1 adulto");
+    }
+    if (children < 0) {
+      await client.query("ROLLBACK");
+      throw new HttpError(400, "Número de crianças inválido");
+    }
+    const newQty = adults + children;
+
+    // Serializa com checkouts concorrentes no mesmo slot.
+    await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [`${booking.activity_id}|${newDate}|${newTime}`]);
+
+    const remaining = await getRemainingForSlotLocked(client, booking.activity_id, newDate, newTime, booking.category);
+    if (remaining === -1) {
+      await client.query("ROLLBACK");
+      throw new HttpError(409, `${booking.activity_name} não tem esse horário disponível nessa data.`);
+    }
+    // No mesmo slot, a própria reserva já ocupa lugares — soma-os de volta ao disponível.
+    const sameSlot = booking.booking_date === newDate && booking.booking_time.slice(0, 5) === newTime;
+    const effectiveRemaining = remaining + (sameSlot ? booking.qty : 0);
+    if (newQty > effectiveRemaining) {
+      await client.query("ROLLBACK");
+      throw new HttpError(409, `Vagas insuficientes para ${booking.activity_name} em ${newDate} ${newTime} (restam ${Math.max(0, effectiveRemaining)}).`);
+    }
+
+    const totalCents = booking.unit_price_cents * newQty;
+    const updated = await bookingsRepo.updateBookingDetails(client, bookingId, {
+      date: newDate,
+      time: newTime,
+      qty: newQty,
+      adults,
+      children,
+      totalCents,
+    });
+    await client.query("COMMIT");
+    return toBookingDTO(updated!);
+  } catch (err) {
+    try {
+      await client.query("ROLLBACK");
+    } catch {
+      /* já revertido */
+    }
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
 async function getHotelWaNumberSafe(hotelId: string): Promise<string> {
   const { rows } = await pool.query<{ whatsapp_number: string }>(
     "SELECT whatsapp_number FROM hotels WHERE id = $1",
