@@ -45,6 +45,7 @@ export interface ListBookingsFilters {
   hotelId?: string;
   status?: "all" | "utilizado" | "cancelado" | "pendente-uso";
   approvalStatus?: "pendente" | "aprovada";
+  date?: string; // data da atividade (YYYY-MM-DD)
   search?: string;
   withOccupancy?: boolean; // anexa lotação do horário (Sala de Agendamento)
 }
@@ -54,6 +55,7 @@ export const listBookingsAdmin = (filters: ListBookingsFilters) => {
   if (filters.hotelId) params.set("hotelId", filters.hotelId);
   if (filters.status) params.set("status", filters.status);
   if (filters.approvalStatus) params.set("approvalStatus", filters.approvalStatus);
+  if (filters.date) params.set("date", filters.date);
   if (filters.search) params.set("search", filters.search);
   if (filters.withOccupancy) params.set("withOccupancy", "1");
   return api.get<Booking[]>(`/admin/bookings?${params.toString()}`);

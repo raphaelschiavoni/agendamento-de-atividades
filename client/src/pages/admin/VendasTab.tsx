@@ -1,22 +1,26 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Search, Trash2 } from "lucide-react";
+import { CalendarDays, Search, Trash2, X } from "lucide-react";
 import { listHotelsAdmin } from "../../api/hotels";
 import { cancelBookingAdmin, listBookingsAdmin, markUsedAdmin, type ListBookingsFilters } from "../../api/bookings";
 import { StatusBadge } from "../../components/StatusBadge";
 import { CATEGORY_META } from "../../lib/constants";
-import { formatBRL } from "../../lib/format";
+import { formatBRL, isoDate } from "../../lib/format";
 
 export function VendasTab() {
   const [filterHotel, setFilterHotel] = useState("all");
   const [filterStatus, setFilterStatus] = useState<ListBookingsFilters["status"]>("all");
+  const [filterDate, setFilterDate] = useState(""); // data da atividade; "" = todas
   const [search, setSearch] = useState("");
   const queryClient = useQueryClient();
 
+  const hoje = isoDate(new Date());
+  const amanha = isoDate(new Date(Date.now() + 86_400_000));
+
   const { data: hotels = [] } = useQuery({ queryKey: ["hotels-admin"], queryFn: listHotelsAdmin });
   const { data: bookings = [] } = useQuery({
-    queryKey: ["bookings-admin", filterHotel, filterStatus, search],
-    queryFn: () => listBookingsAdmin({ hotelId: filterHotel, status: filterStatus, search }),
+    queryKey: ["bookings-admin", filterHotel, filterStatus, filterDate, search],
+    queryFn: () => listBookingsAdmin({ hotelId: filterHotel, status: filterStatus, date: filterDate || undefined, search }),
   });
 
   const markUsedMutation = useMutation({
@@ -56,6 +60,45 @@ export function VendasTab() {
             style={{ background: "transparent" }}
           />
         </div>
+      </div>
+
+      {/* Filtro por dia da atividade */}
+      <div className="flex flex-wrap items-center gap-2 mb-4">
+        <span className="text-xs opacity-60 flex items-center gap-1"><CalendarDays size={13} /> Dia da atividade:</span>
+        {[
+          { label: "Hoje", value: hoje },
+          { label: "Amanhã", value: amanha },
+        ].map((q) => (
+          <button
+            key={q.value}
+            onClick={() => setFilterDate(filterDate === q.value ? "" : q.value)}
+            className="px-2.5 py-1 rounded-full text-xs"
+            style={{
+              background: filterDate === q.value ? "var(--forest)" : "var(--paper)",
+              color: filterDate === q.value ? "var(--paper)" : "var(--bark)",
+              border: "1px solid var(--line)",
+            }}
+          >
+            {q.label}
+          </button>
+        ))}
+        <input
+          type="date"
+          value={filterDate}
+          onChange={(e) => setFilterDate(e.target.value)}
+          className="rounded-md px-2 py-1 text-sm"
+          style={{ border: "1px solid var(--line)", background: "var(--paper)" }}
+        />
+        {filterDate && (
+          <button
+            onClick={() => setFilterDate("")}
+            className="flex items-center gap-1 px-2 py-1 rounded-md text-xs"
+            style={{ border: "1px solid var(--line)" }}
+          >
+            <X size={12} /> Limpar dia
+          </button>
+        )}
+        <span className="text-xs opacity-60">{bookings.length} reserva(s)</span>
       </div>
 
       <div className="space-y-2">

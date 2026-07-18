@@ -83,6 +83,7 @@ export interface ListBookingsFilters {
   hotelId?: string;
   status?: "all" | "utilizado" | "cancelado" | "pendente-uso";
   approvalStatus?: "pendente" | "aprovada";
+  date?: string; // data da atividade (YYYY-MM-DD)
   search?: string;
 }
 
@@ -102,6 +103,11 @@ export async function listBookings(filters: ListBookingsFilters): Promise<Bookin
     params.push(filters.approvalStatus);
     clauses.push(`approval_status = $${params.length}`);
     if (filters.approvalStatus === "pendente") clauses.push("status <> 'cancelado'");
+  }
+
+  if (filters.date) {
+    params.push(filters.date);
+    clauses.push(`booking_date = $${params.length}`);
   }
 
   if (filters.search) {

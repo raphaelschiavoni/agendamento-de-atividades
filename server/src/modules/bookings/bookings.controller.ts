@@ -54,6 +54,7 @@ export async function listBookingsAdmin(req: Request, res: Response) {
       req.query.approvalStatus === "pendente" || req.query.approvalStatus === "aprovada"
         ? req.query.approvalStatus
         : undefined,
+    date: typeof req.query.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(req.query.date) ? req.query.date : undefined,
     search: typeof req.query.search === "string" ? req.query.search : undefined,
   });
   let dtos = bookings.map(service.toBookingDTO);
