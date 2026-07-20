@@ -5,7 +5,7 @@ import { Modal } from "../../components/Modal";
 import { MonthCalendar } from "../../components/MonthCalendar";
 import { getActivity, getAvailability } from "../../api/activities";
 import { editBookingAdmin } from "../../api/bookings";
-import { calendarDates, calendarWeekdays, slotsForDate } from "../../lib/schedule";
+import { calendarDates, calendarWeekdays, isKidsActivity, slotsForDate } from "../../lib/schedule";
 import { ApiError } from "../../api/client";
 import type { Booking } from "../../types";
 
@@ -19,10 +19,12 @@ export function EditBookingModal({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const isKids = isKidsActivity(booking.activityName);
   const [date, setDate] = useState(booking.date);
   const [time, setTime] = useState<string | null>(booking.time);
-  const [adults, setAdults] = useState(booking.adults);
-  const [children, setChildren] = useState(booking.children);
+  // Em atividade Kids, todos os participantes contam como crianças.
+  const [adults, setAdults] = useState(isKids ? 0 : booking.adults);
+  const [children, setChildren] = useState(isKids ? booking.children || booking.qty : booking.children);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const qty = adults + children;
@@ -106,8 +108,14 @@ export function EditBookingModal({
 
       {time && (
         <div className="mb-4 space-y-3">
-          <Counter label="Adultos" sub="13 anos ou mais" value={adults} onDec={() => setAdults((a) => Math.max(1, a - 1))} onInc={() => canAddMore && setAdults((a) => a + 1)} />
-          <Counter label="Crianças" sub="até 12 anos" value={children} onDec={() => setChildren((c) => Math.max(0, c - 1))} onInc={() => canAddMore && setChildren((c) => c + 1)} />
+          {isKids ? (
+            <div className="text-xs px-2.5 py-1.5 rounded-md" style={{ background: "var(--gold-light)", color: "var(--gold)" }}>
+              Atividade Kids — exclusiva para crianças (sem adultos).
+            </div>
+          ) : (
+            <Counter label="Adultos" sub="13 anos ou mais" value={adults} onDec={() => setAdults((a) => Math.max(1, a - 1))} onInc={() => canAddMore && setAdults((a) => a + 1)} />
+          )}
+          <Counter label="Crianças" sub="até 12 anos" value={children} onDec={() => setChildren((c) => Math.max(isKids ? 1 : 0, c - 1))} onInc={() => canAddMore && setChildren((c) => c + 1)} />
           <div className="text-xs opacity-60">Total: {qty} pessoa(s) · máx. {remaining} disponíveis neste horário</div>
         </div>
       )}

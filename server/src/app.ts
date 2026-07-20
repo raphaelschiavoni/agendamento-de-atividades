@@ -13,6 +13,7 @@ import { hotelsRouter, adminHotelsRouter } from "./modules/hotels/hotels.routes.
 import { activitiesRouter, adminActivitiesRouter } from "./modules/activities/activities.routes.js";
 import { authRouter } from "./modules/auth/auth.routes.js";
 import { adminUsersRouter } from "./modules/auth/users.routes.js";
+import { adminOccupancyRouter } from "./modules/availability/occupancy.routes.js";
 import { checkoutRouter, vouchersRouter, adminBookingsRouter } from "./modules/bookings/bookings.routes.js";
 import { adminDashboardRouter } from "./modules/dashboard/dashboard.routes.js";
 import { adminAnalyticsRouter } from "./modules/analytics/analytics.routes.js";
@@ -72,6 +73,7 @@ export function createApp() {
   app.use("/api/admin/whatsapp-log", adminWhatsappLogRouter);
   app.use("/api/admin/uploads", adminUploadsRouter);
   app.use("/api/admin/users", adminUsersRouter);
+  app.use("/api/admin/occupancy", adminOccupancyRouter);
 
   // Serve the built front-end (client/dist) from the same origin in production.
   // This makes /api same-origin (no CORS/proxy needed) and lets EasyPanel run a

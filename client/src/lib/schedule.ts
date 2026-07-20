@@ -5,6 +5,11 @@ export interface EffectiveSlot {
   capacity: number;
 }
 
+/** Atividades com "Kids" no título são exclusivas para crianças (sem adultos). */
+export function isKidsActivity(name: string): boolean {
+  return /\bkids\b/i.test(name);
+}
+
 export function scheduleHasContent(s: ActivitySchedule | null | undefined): boolean {
   if (!s) return false;
   const wd = Object.values(s.weekdays ?? {}).some((slots) => (slots?.length ?? 0) > 0);

@@ -67,6 +67,31 @@ function dedupeSorted(slots: EffectiveSlot[]): EffectiveSlot[] {
   return Array.from(map.values()).sort((x, y) => x.time.localeCompare(y.time));
 }
 
+export interface ActivityOccupancy {
+  activityId: string;
+  activityName: string;
+  slots: { time: string; capacity: number; reserved: number; remaining: number }[];
+}
+
+/** Quadro de ocupação por horário de todas as atividades ativas de um hotel numa data. */
+export async function getHotelOccupancy(hotelId: string, date: string): Promise<ActivityOccupancy[]> {
+  const { rows: acts } = await pool.query<{ id: string; name: string }>(
+    "SELECT id, name FROM activities WHERE hotel_id = $1 AND active = true ORDER BY name",
+    [hotelId]
+  );
+  const out: ActivityOccupancy[] = [];
+  for (const a of acts) {
+    const slots = await getAvailabilityForDate(a.id, date);
+    if (slots.length === 0) continue;
+    out.push({
+      activityId: a.id,
+      activityName: a.name,
+      slots: slots.map((s) => ({ time: s.time, capacity: s.capacity, reserved: s.capacity - s.remaining, remaining: s.remaining })),
+    });
+  }
+  return out;
+}
+
 /** Quota de vagas da categoria por horário: null = sem limite; 0 = categoria desabilitada. */
 export async function getCategoryQuota(q: Queryable, activityId: string, category: string): Promise<number | null> {
   const { rows } = await q.query<{ cap: number | null }>(

@@ -1,6 +1,6 @@
 import { pool } from "../../db/pool.js";
 import { HttpError } from "../../middleware/error-handler.js";
-import type { CartItemInput, CustomerInput, OrderInput } from "../../types.js";
+import { isKidsActivity, type CartItemInput, type CustomerInput, type OrderInput } from "../../types.js";
 import { getPaymentProvider } from "../payments/index.js";
 import { getNotificationProvider } from "../notifications/index.js";
 import { getAvailabilityForDate, getEffectiveSlots, getRemainingForSlotLocked } from "../availability/availability.service.js";
@@ -46,6 +46,12 @@ async function enrichAndValidateCartItem(item: CartItemInput, order: ResolvedOrd
   }
   const adults = item.adults ?? item.qty;
   const children = item.children ?? 0;
+
+  // Atividade Kids: exclusiva para crianças (sem adultos).
+  if (isKidsActivity(row.activity_name)) {
+    if (adults > 0) throw new HttpError(409, `${row.activity_name} é exclusiva para crianças (Kids).`);
+    if (children < 1) throw new HttpError(400, `${row.activity_name} exige ao menos 1 criança.`);
+  }
 
   // Optimistic (non-locking) pre-check for a fast fail + good UX; the authoritative
   // check happens transactionally in finalizeBookingsFromCharge.
@@ -233,13 +239,22 @@ export async function editBooking(bookingId: string, input: EditBookingInput) {
     const newTime = (input.time ?? booking.booking_time).slice(0, 5);
     const adults = input.adults ?? booking.adults;
     const children = input.children ?? booking.children;
-    if (adults < 1) {
-      await client.query("ROLLBACK");
-      throw new HttpError(400, "É necessário ao menos 1 adulto");
-    }
     if (children < 0) {
       await client.query("ROLLBACK");
       throw new HttpError(400, "Número de crianças inválido");
+    }
+    if (isKidsActivity(booking.activity_name)) {
+      if (adults > 0) {
+        await client.query("ROLLBACK");
+        throw new HttpError(409, `${booking.activity_name} é exclusiva para crianças (Kids).`);
+      }
+      if (children < 1) {
+        await client.query("ROLLBACK");
+        throw new HttpError(400, `${booking.activity_name} exige ao menos 1 criança.`);
+      }
+    } else if (adults < 1) {
+      await client.query("ROLLBACK");
+      throw new HttpError(400, "É necessário ao menos 1 adulto");
     }
     const newQty = adults + children;
 

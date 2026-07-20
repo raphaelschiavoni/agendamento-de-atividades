@@ -10,6 +10,21 @@ export const getAvailability = (id: string, date: string, category?: string) =>
     `/activities/${id}/availability?date=${date}${category ? `&category=${category}` : ""}`
   );
 
+// admin: quadro de ocupação por horário
+export interface OccupancySlot {
+  time: string;
+  capacity: number;
+  reserved: number;
+  remaining: number;
+}
+export interface ActivityOccupancy {
+  activityId: string;
+  activityName: string;
+  slots: OccupancySlot[];
+}
+export const getOccupancy = (hotelId: string, date: string) =>
+  api.get<{ date: string; activities: ActivityOccupancy[] }>(`/admin/occupancy?hotelId=${hotelId}&date=${date}`);
+
 // admin
 export const listActivitiesAdmin = (hotelId: string) =>
   api.get<Activity[]>(`/admin/activities?hotelId=${hotelId}`);

@@ -48,7 +48,7 @@ export function AdminApp({ user }: { user: AdminUser }) {
       {tab === "dashboard" && <DashboardTab />}
       {tab === "relatorios" && <RelatoriosTab />}
       {tab === "catalogo" && <CatalogTab />}
-      {tab === "vendas" && <VendasTab />}
+      {tab === "vendas" && <VendasTab user={user} />}
       {tab === "agendamento" && <AgendamentoTab user={user} />}
       {tab === "whatsapp" && <WhatsappTab user={user} />}
       {tab === "usuarios" && <UsuariosTab me={user} />}

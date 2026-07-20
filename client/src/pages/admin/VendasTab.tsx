@@ -5,12 +5,15 @@ import { listHotelsAdmin } from "../../api/hotels";
 import { cancelBookingAdmin, listBookingsAdmin, markUsedAdmin, type ListBookingsFilters } from "../../api/bookings";
 import { StatusBadge } from "../../components/StatusBadge";
 import { EditBookingModal } from "./EditBookingModal";
+import { OccupancyBoard } from "./OccupancyBoard";
 import { CATEGORY_META } from "../../lib/constants";
 import { formatBRL, isoDate } from "../../lib/format";
-import type { Booking } from "../../types";
+import type { AdminUser, Booking } from "../../types";
 
-export function VendasTab() {
-  const [filterHotel, setFilterHotel] = useState("all");
+export function VendasTab({ user }: { user: AdminUser }) {
+  const lockedHotel = user.role === "agendamento" ? user.hotelId : null;
+  const [view, setView] = useState<"lista" | "ocupacao">("lista");
+  const [filterHotel, setFilterHotel] = useState(lockedHotel ?? "all");
   const [filterStatus, setFilterStatus] = useState<ListBookingsFilters["status"]>("all");
   const [filterDate, setFilterDate] = useState(""); // data da atividade; "" = todas
   const [search, setSearch] = useState("");
@@ -37,32 +40,60 @@ export function VendasTab() {
 
   return (
     <div>
+      {/* Alterna entre a lista de vouchers e o quadro de ocupação por horário */}
+      <div className="flex gap-2 mb-4">
+        {([["lista", "Reservas"], ["ocupacao", "Ocupação por horário"]] as const).map(([v, label]) => (
+          <button
+            key={v}
+            onClick={() => setView(v)}
+            className="px-3 py-1.5 rounded-md text-sm"
+            style={{
+              background: view === v ? "var(--forest)" : "var(--paper)",
+              color: view === v ? "var(--paper)" : "var(--bark)",
+              border: "1px solid var(--line)",
+            }}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       <div className="flex flex-wrap gap-2 mb-4">
-        <select value={filterHotel} onChange={(e) => setFilterHotel(e.target.value)} className="rounded-md px-2 py-1.5 text-sm" style={{ border: "1px solid var(--line)" }}>
-          <option value="all">Todos os hotéis</option>
-          {hotels.map((h) => <option key={h.id} value={h.id}>{h.name}</option>)}
-        </select>
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value as ListBookingsFilters["status"])}
-          className="rounded-md px-2 py-1.5 text-sm"
-          style={{ border: "1px solid var(--line)" }}
-        >
-          <option value="all">Todos os status</option>
-          <option value="pendente-uso">Aguardando uso</option>
-          <option value="utilizado">Utilizado</option>
-          <option value="cancelado">Cancelado</option>
-        </select>
-        <div className="flex items-center gap-1.5 rounded-md px-2 py-1.5" style={{ border: "1px solid var(--line)" }}>
-          <Search size={14} className="opacity-50" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar nome, telefone ou voucher"
-            className="text-sm outline-none"
-            style={{ background: "transparent" }}
-          />
-        </div>
+        {lockedHotel ? (
+          <span className="text-sm px-3 py-1.5 rounded-md" style={{ background: "var(--moss-light)", color: "var(--moss)" }}>
+            {hotels.find((h) => h.id === lockedHotel)?.name ?? "Seu hotel"}
+          </span>
+        ) : (
+          <select value={filterHotel} onChange={(e) => setFilterHotel(e.target.value)} className="rounded-md px-2 py-1.5 text-sm" style={{ border: "1px solid var(--line)" }}>
+            <option value="all">{view === "ocupacao" ? "Selecione um hotel…" : "Todos os hotéis"}</option>
+            {hotels.map((h) => <option key={h.id} value={h.id}>{h.name}</option>)}
+          </select>
+        )}
+        {view === "lista" && (
+          <>
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value as ListBookingsFilters["status"])}
+              className="rounded-md px-2 py-1.5 text-sm"
+              style={{ border: "1px solid var(--line)" }}
+            >
+              <option value="all">Todos os status</option>
+              <option value="pendente-uso">Aguardando uso</option>
+              <option value="utilizado">Utilizado</option>
+              <option value="cancelado">Cancelado</option>
+            </select>
+            <div className="flex items-center gap-1.5 rounded-md px-2 py-1.5" style={{ border: "1px solid var(--line)" }}>
+              <Search size={14} className="opacity-50" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Buscar nome, telefone ou voucher"
+                className="text-sm outline-none"
+                style={{ background: "transparent" }}
+              />
+            </div>
+          </>
+        )}
       </div>
 
       {/* Filtro por dia da atividade */}
@@ -92,7 +123,7 @@ export function VendasTab() {
           className="rounded-md px-2 py-1 text-sm"
           style={{ border: "1px solid var(--line)", background: "var(--paper)" }}
         />
-        {filterDate && (
+        {filterDate && view === "lista" && (
           <button
             onClick={() => setFilterDate("")}
             className="flex items-center gap-1 px-2 py-1 rounded-md text-xs"
@@ -101,9 +132,12 @@ export function VendasTab() {
             <X size={12} /> Limpar dia
           </button>
         )}
-        <span className="text-xs opacity-60">{bookings.length} reserva(s)</span>
+        {view === "lista" && <span className="text-xs opacity-60">{bookings.length} reserva(s)</span>}
       </div>
 
+      {view === "ocupacao" && <OccupancyBoard hotelId={filterHotel} date={filterDate || hoje} />}
+
+      {view === "lista" && (
       <div className="space-y-2">
         {bookings.map((b) => (
           <div key={b.id} className="rounded-lg p-3 flex items-center justify-between flex-wrap gap-2" style={{ background: "var(--paper)", border: "1px solid var(--line)" }}>
@@ -147,6 +181,7 @@ export function VendasTab() {
         ))}
         {bookings.length === 0 && <p className="text-sm opacity-60">Nenhuma venda encontrada com esses filtros.</p>}
       </div>
+      )}
 
       {editing && (
         <EditBookingModal

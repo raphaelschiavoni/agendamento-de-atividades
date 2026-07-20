@@ -1,6 +1,11 @@
 export type Category = "hospede" | "visitante" | "dayuse" | "passaporte";
 export const CATEGORIES: Category[] = ["hospede", "visitante", "dayuse", "passaporte"];
 
+/** Atividades com "Kids" no título são exclusivas para crianças (sem adultos). */
+export function isKidsActivity(name: string): boolean {
+  return /\bkids\b/i.test(name);
+}
+
 export type BookingStatus = "pendente" | "pago" | "cancelado";
 
 export interface HotelDTO {

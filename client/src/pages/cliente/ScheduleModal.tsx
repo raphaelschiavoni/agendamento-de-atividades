@@ -6,7 +6,7 @@ import { MonthCalendar } from "../../components/MonthCalendar";
 import { getAvailability } from "../../api/activities";
 import { CATEGORY_META } from "../../lib/constants";
 import { formatBRL, isoDate } from "../../lib/format";
-import { calendarDates, calendarWeekdays, slotsForDate } from "../../lib/schedule";
+import { calendarDates, calendarWeekdays, isKidsActivity, slotsForDate } from "../../lib/schedule";
 import type { Activity, Category } from "../../types";
 
 export function ScheduleModal({
@@ -20,10 +20,11 @@ export function ScheduleModal({
   onClose: () => void;
   onConfirm: (date: string, time: string, adults: number, children: number) => void;
 }) {
+  const isKids = isKidsActivity(activity.name);
   const [date, setDate] = useState<string>(isoDate(new Date()));
   const [time, setTime] = useState<string | null>(null);
-  const [adults, setAdults] = useState(1);
-  const [children, setChildren] = useState(0);
+  const [adults, setAdults] = useState(isKids ? 0 : 1);
+  const [children, setChildren] = useState(isKids ? 1 : 0);
   const qty = adults + children;
 
   const { data } = useQuery({
@@ -38,9 +39,9 @@ export function ScheduleModal({
   const remaining = time ? remainingByTime.get(time) ?? capOf(time) : daySlots[0]?.capacity ?? activity.capacity;
 
   useEffect(() => {
-    setAdults(1);
-    setChildren(0);
-  }, [time]);
+    setAdults(isKids ? 0 : 1);
+    setChildren(isKids ? 1 : 0);
+  }, [time, isKids]);
 
   const price = activity.prices[category] || 0;
   const canAddMore = qty < remaining;
@@ -88,18 +89,24 @@ export function ScheduleModal({
 
       {time && (
         <div className="mb-4 space-y-3">
-          <Counter
-            label="Adultos"
-            sub="13 anos ou mais"
-            value={adults}
-            onDec={() => setAdults((a) => Math.max(1, a - 1))}
-            onInc={() => canAddMore && setAdults((a) => a + 1)}
-          />
+          {isKids ? (
+            <div className="text-xs px-2.5 py-1.5 rounded-md" style={{ background: "var(--gold-light)", color: "var(--gold)" }}>
+              Atividade Kids — exclusiva para crianças (sem adultos).
+            </div>
+          ) : (
+            <Counter
+              label="Adultos"
+              sub="13 anos ou mais"
+              value={adults}
+              onDec={() => setAdults((a) => Math.max(1, a - 1))}
+              onInc={() => canAddMore && setAdults((a) => a + 1)}
+            />
+          )}
           <Counter
             label="Crianças"
             sub="até 12 anos"
             value={children}
-            onDec={() => setChildren((c) => Math.max(0, c - 1))}
+            onDec={() => setChildren((c) => Math.max(isKids ? 1 : 0, c - 1))}
             onInc={() => canAddMore && setChildren((c) => c + 1)}
           />
           <div className="text-xs opacity-60">
