@@ -24,7 +24,7 @@ export async function getActivityAvailability(req: Request, res: Response) {
     : undefined;
   const activity = await repo.getActivityById(req.params.id);
   if (!activity) throw new HttpError(404, "Atividade não encontrada");
-  const times = await getAvailabilityForDate(activity.id, date, category);
+  const times = await getAvailabilityForDate(activity.id, date, category, { hideExpired: true });
   res.json({ date, times });
 }
 

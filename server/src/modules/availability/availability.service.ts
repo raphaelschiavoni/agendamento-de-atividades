@@ -1,6 +1,6 @@
 import type { Pool, PoolClient } from "pg";
 import { pool } from "../../db/pool.js";
-import { effectiveCapacity, scheduleHasContent, type ActivitySchedule } from "../../types.js";
+import { effectiveCapacity, isSlotBookable, scheduleHasContent, type ActivitySchedule } from "../../types.js";
 
 export interface SlotAvailability {
   time: string;
@@ -134,10 +134,14 @@ export async function getCategoryQuota(q: Queryable, activityId: string, categor
 export async function getAvailabilityForDate(
   activityId: string,
   date: string,
-  category?: string
+  category?: string,
+  opts?: { hideExpired?: boolean }
 ): Promise<SlotAvailability[]> {
-  const slots = await getEffectiveSlots(pool, activityId, date);
+  let slots = await getEffectiveSlots(pool, activityId, date);
   if (!slots || slots.length === 0) return [];
+  // No fluxo de agendamento, esconde horários que já começaram (+ tolerância).
+  if (opts?.hideExpired) slots = slots.filter((s) => isSlotBookable(date, s.time));
+  if (slots.length === 0) return [];
 
   const quota = category ? await getCategoryQuota(pool, activityId, category) : null;
   if (quota === 0) return []; // categoria desabilitada para esta atividade

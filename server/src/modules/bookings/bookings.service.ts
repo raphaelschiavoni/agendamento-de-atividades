@@ -1,6 +1,6 @@
 import { pool } from "../../db/pool.js";
 import { HttpError } from "../../middleware/error-handler.js";
-import { isKidsActivity, type CartItemInput, type CustomerInput, type OrderInput } from "../../types.js";
+import { isKidsActivity, isSlotBookable, type CartItemInput, type CustomerInput, type OrderInput } from "../../types.js";
 import { getPaymentProvider } from "../payments/index.js";
 import { getNotificationProvider } from "../notifications/index.js";
 import { getAvailabilityForDate, getEffectiveSlots, getRemainingForSlotLocked } from "../availability/availability.service.js";
@@ -43,6 +43,9 @@ async function enrichAndValidateCartItem(item: CartItemInput, order: ResolvedOrd
   const slot = slots.find((s) => s.time === item.time.slice(0, 5));
   if (!slot) {
     throw new HttpError(409, `${row.activity_name} não possui o horário ${item.time} nessa data.`);
+  }
+  if (!isSlotBookable(item.date, item.time)) {
+    throw new HttpError(409, `O horário ${item.time.slice(0, 5)} de ${row.activity_name} já passou. Escolha outro horário ou o próximo dia.`);
   }
   const adults = item.adults ?? item.qty;
   const children = item.children ?? 0;
@@ -155,6 +158,10 @@ export async function finalizeBookingsFromCharge(chargeId: string) {
     const items = [...charge.cart_snapshot].sort((a, b) => (slotSortKey(a) < slotSortKey(b) ? -1 : 1));
 
     for (const item of items) {
+      if (!isSlotBookable(item.date, item.time)) {
+        await client.query("ROLLBACK");
+        throw new HttpError(409, `O horário ${item.time.slice(0, 5)} de ${item.activityName} já passou — escolha outro horário ou o próximo dia.`);
+      }
       await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [slotSortKey(item)]);
       const remaining = await getRemainingForSlotLocked(client, item.activityId, item.date, item.time, item.category);
       if (remaining < item.qty) {

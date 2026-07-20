@@ -5,7 +5,7 @@ import { Modal } from "../../components/Modal";
 import { MonthCalendar } from "../../components/MonthCalendar";
 import { getActivity, getAvailability } from "../../api/activities";
 import { editBookingAdmin } from "../../api/bookings";
-import { calendarDates, calendarWeekdays, isKidsActivity, slotsForDate } from "../../lib/schedule";
+import { calendarDates, calendarWeekdays, isKidsActivity, isSlotBookable, slotsForDate } from "../../lib/schedule";
 import { ApiError } from "../../api/client";
 import type { Booking } from "../../types";
 
@@ -36,7 +36,10 @@ export function EditBookingModal({
     enabled: !!date,
   });
 
-  const daySlots = activity ? slotsForDate(activity, date) : [];
+  // Esconde horários já passados, mas mantém o horário atual da reserva (edição operacional).
+  const daySlots = (activity ? slotsForDate(activity, date) : []).filter(
+    (s) => isSlotBookable(date, s.time) || (date === booking.date && s.time === booking.time)
+  );
   const remainingByTime = new Map((avail?.times ?? []).map((t) => [t.time, t.remaining]));
   // No slot original, a própria reserva já ocupa lugares — soma de volta para exibir o real disponível.
   const availableAt = (t: string) => {

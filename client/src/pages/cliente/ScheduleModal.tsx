@@ -6,7 +6,7 @@ import { MonthCalendar } from "../../components/MonthCalendar";
 import { getAvailability } from "../../api/activities";
 import { CATEGORY_META } from "../../lib/constants";
 import { formatBRL, isoDate } from "../../lib/format";
-import { calendarDates, calendarWeekdays, isKidsActivity, slotsForDate } from "../../lib/schedule";
+import { calendarDates, calendarWeekdays, isKidsActivity, isSlotBookable, slotsForDate } from "../../lib/schedule";
 import type { Activity, Category } from "../../types";
 
 export function ScheduleModal({
@@ -33,7 +33,8 @@ export function ScheduleModal({
     enabled: !!date,
   });
   // Agenda efetiva do dia escolhido: horários e capacidade de cada um.
-  const daySlots = slotsForDate(activity, date);
+  // Esconde horários que já começaram (+ tolerância) para hoje.
+  const daySlots = slotsForDate(activity, date).filter((s) => isSlotBookable(date, s.time));
   const capOf = (t: string) => daySlots.find((s) => s.time === t)?.capacity ?? activity.capacity;
   const remainingByTime = new Map((data?.times ?? []).map((t) => [t.time, t.remaining]));
   const remaining = time ? remainingByTime.get(time) ?? capOf(time) : daySlots[0]?.capacity ?? activity.capacity;

@@ -6,6 +6,21 @@ export function isKidsActivity(name: string): boolean {
   return /\bkids\b/i.test(name);
 }
 
+// Fuso de Brasília fixo em -03:00 (o Brasil não adota horário de verão desde 2019).
+const BR_OFFSET = "-03:00";
+export const BOOKING_TOLERANCE_MIN = 10;
+
+/** Epoch (ms) do início de um horário interpretado no fuso de Brasília. */
+export function slotStartMs(date: string, time: string): number {
+  return new Date(`${date}T${time.slice(0, 5)}:00${BR_OFFSET}`).getTime();
+}
+
+/** Um horário só pode ser agendado até o seu início + tolerância (10 min).
+ *  Depois disso, aquele horário fica indisponível para o dia (só no dia seguinte). */
+export function isSlotBookable(date: string, time: string, toleranceMin = BOOKING_TOLERANCE_MIN): boolean {
+  return Date.now() <= slotStartMs(date, time) + toleranceMin * 60_000;
+}
+
 export type BookingStatus = "pendente" | "pago" | "cancelado";
 
 export interface HotelDTO {

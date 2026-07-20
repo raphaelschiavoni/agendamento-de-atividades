@@ -10,6 +10,16 @@ export function isKidsActivity(name: string): boolean {
   return /\bkids\b/i.test(name);
 }
 
+// Fuso de Brasília fixo em -03:00 (sem horário de verão desde 2019).
+const BR_OFFSET = "-03:00";
+const BOOKING_TOLERANCE_MIN = 10;
+
+/** Um horário só pode ser agendado até o início + 10 min de tolerância. */
+export function isSlotBookable(date: string, time: string): boolean {
+  const start = new Date(`${date}T${time.slice(0, 5)}:00${BR_OFFSET}`).getTime();
+  return Date.now() <= start + BOOKING_TOLERANCE_MIN * 60_000;
+}
+
 export function scheduleHasContent(s: ActivitySchedule | null | undefined): boolean {
   if (!s) return false;
   const wd = Object.values(s.weekdays ?? {}).some((slots) => (slots?.length ?? 0) > 0);
