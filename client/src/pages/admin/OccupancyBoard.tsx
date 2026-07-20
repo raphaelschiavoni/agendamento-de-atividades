@@ -51,14 +51,30 @@ export function OccupancyBoard({ hotelId, date }: { hotelId: string; date: strin
               return (
                 <div
                   key={s.time}
-                  className="rounded-lg p-3"
-                  style={{ background: c.bg, border: `1px solid ${c.border}`, borderLeft: `5px solid ${c.border}` }}
+                  className="rounded-lg p-3 relative group"
+                  style={{ background: c.bg, border: `1px solid ${c.border}`, borderLeft: `5px solid ${c.border}`, cursor: s.guests.length ? "help" : "default" }}
                 >
                   <div className="text-sm font-semibold" style={{ color: "var(--forest)" }}>Horário: {s.time}</div>
                   <div className="text-xs mt-1" style={{ color: "var(--bark)" }}>Reservas: {s.reserved} pessoa(s)</div>
                   <div className="text-xs font-medium" style={{ color: c.border }}>
                     Disponível: {s.remaining} de {s.capacity}
                   </div>
+
+                  {/* Passe o mouse para conferir os nomes agendados neste horário */}
+                  {s.guests.length > 0 && (
+                    <div
+                      className="hidden group-hover:block absolute z-20 left-0 top-full mt-1 rounded-md p-2 shadow-lg"
+                      style={{ background: "var(--paper)", border: "1px solid var(--line)", minWidth: 180, maxHeight: 220, overflowY: "auto" }}
+                    >
+                      <div className="text-xs font-semibold mb-1" style={{ color: "var(--forest)" }}>Agendados ({s.reserved})</div>
+                      {s.guests.map((g, i) => (
+                        <div key={i} className="text-xs flex justify-between gap-3" style={{ color: "var(--bark)" }}>
+                          <span>{g.name}</span>
+                          {g.qty > 1 && <span className="opacity-60">{g.qty} pessoas</span>}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               );
             })}

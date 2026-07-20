@@ -67,13 +67,18 @@ function dedupeSorted(slots: EffectiveSlot[]): EffectiveSlot[] {
   return Array.from(map.values()).sort((x, y) => x.time.localeCompare(y.time));
 }
 
+export interface OccupancyGuest {
+  name: string;
+  qty: number;
+}
 export interface ActivityOccupancy {
   activityId: string;
   activityName: string;
-  slots: { time: string; capacity: number; reserved: number; remaining: number }[];
+  slots: { time: string; capacity: number; reserved: number; remaining: number; guests: OccupancyGuest[] }[];
 }
 
-/** Quadro de ocupação por horário de todas as atividades ativas de um hotel numa data. */
+/** Quadro de ocupação por horário de todas as atividades ativas de um hotel numa data,
+ *  com os nomes das pessoas agendadas em cada horário (para conferência). */
 export async function getHotelOccupancy(hotelId: string, date: string): Promise<ActivityOccupancy[]> {
   const { rows: acts } = await pool.query<{ id: string; name: string }>(
     "SELECT id, name FROM activities WHERE hotel_id = $1 AND active = true ORDER BY name",
@@ -83,10 +88,31 @@ export async function getHotelOccupancy(hotelId: string, date: string): Promise<
   for (const a of acts) {
     const slots = await getAvailabilityForDate(a.id, date);
     if (slots.length === 0) continue;
+
+    const { rows: guestRows } = await pool.query<{ booking_time: string; customer_name: string; qty: number }>(
+      `SELECT to_char(booking_time, 'HH24:MI') AS booking_time, customer_name, qty
+       FROM bookings
+       WHERE activity_id = $1 AND booking_date = $2 AND status <> 'cancelado'
+       ORDER BY booking_time, customer_name`,
+      [a.id, date]
+    );
+    const guestsByTime = new Map<string, OccupancyGuest[]>();
+    for (const g of guestRows) {
+      const list = guestsByTime.get(g.booking_time) ?? [];
+      list.push({ name: g.customer_name, qty: g.qty });
+      guestsByTime.set(g.booking_time, list);
+    }
+
     out.push({
       activityId: a.id,
       activityName: a.name,
-      slots: slots.map((s) => ({ time: s.time, capacity: s.capacity, reserved: s.capacity - s.remaining, remaining: s.remaining })),
+      slots: slots.map((s) => ({
+        time: s.time,
+        capacity: s.capacity,
+        reserved: s.capacity - s.remaining,
+        remaining: s.remaining,
+        guests: guestsByTime.get(s.time) ?? [],
+      })),
     });
   }
   return out;
