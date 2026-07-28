@@ -31,7 +31,11 @@ export function ActivityCard({
         <div className="rs-display" style={{ color: "var(--forest)", fontSize: 17, fontWeight: 600 }}>{activity.name}</div>
         <p
           className="rs-body text-xs opacity-70 mt-1"
-          style={expanded ? undefined : { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}
+          style={
+            expanded
+              ? { whiteSpace: "pre-line" } // preserva quebras de linha/parágrafos (ex.: avisos de segurança)
+              : { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }
+          }
         >
           {activity.description}
         </p>
