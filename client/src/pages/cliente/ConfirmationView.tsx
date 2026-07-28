@@ -1,10 +1,40 @@
-import { CheckCircle2, Ticket } from "lucide-react";
+import { Download, MessageCircle, Ticket, CheckCircle2 } from "lucide-react";
 import { CATEGORY_META } from "../../lib/constants";
 import { formatBRL } from "../../lib/format";
 import { whenText } from "../../lib/schedule";
+import { buildVoucherPdf, voucherFileName } from "../../lib/voucherPdf";
 import type { Booking } from "../../types";
 
 export function ConfirmationView({ vouchers, onNewOrder }: { vouchers: Booking[]; onNewOrder: () => void }) {
+  const fileName = voucherFileName(vouchers);
+
+  function salvarVoucher() {
+    buildVoucherPdf(vouchers).save(fileName);
+  }
+
+  async function enviarWhatsApp() {
+    const doc = buildVoucherPdf(vouchers);
+    const blob = doc.output("blob");
+    const file = new File([blob], fileName, { type: "application/pdf" });
+    const texto =
+      "Voucher Rede dos Sonhos\n" +
+      vouchers.map((v) => `• ${v.activityName} — ${v.date} ${whenText(v.time)} — código ${v.voucherCode}`).join("\n");
+
+    // No celular, compartilha o PDF direto (WhatsApp aparece nas opções).
+    const nav = navigator as Navigator & { canShare?: (d: unknown) => boolean };
+    if (nav.canShare && nav.canShare({ files: [file] })) {
+      try {
+        await nav.share({ files: [file], title: "Voucher Rede dos Sonhos", text: texto });
+        return;
+      } catch {
+        /* usuário cancelou — cai no fallback */
+      }
+    }
+    // Fallback (desktop): baixa o PDF e abre o WhatsApp com o texto do voucher.
+    doc.save(fileName);
+    window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, "_blank", "noopener,noreferrer");
+  }
+
   return (
     <div>
       <div className="print-area">
@@ -40,17 +70,25 @@ export function ConfirmationView({ vouchers, onNewOrder }: { vouchers: Booking[]
           })}
         </div>
       </div>
-      <div className="no-print">
+      <div className="no-print flex flex-wrap gap-2 mt-4">
         <button
-          onClick={() => window.print()}
-          className="mt-4 mr-2 px-4 py-2 rounded-md text-sm"
-          style={{ border: "1px solid var(--line)" }}
+          onClick={salvarVoucher}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-md text-sm"
+          style={{ border: "1px solid var(--line)", color: "var(--forest)" }}
         >
-          Imprimir voucher
+          <Download size={15} /> Salvar voucher
+        </button>
+        <button
+          onClick={enviarWhatsApp}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-md text-sm"
+          style={{ background: "#25D366", color: "#fff" }}
+          title="Enviar o PDF do voucher pelo WhatsApp"
+        >
+          <MessageCircle size={15} /> Enviar por WhatsApp
         </button>
         <button
           onClick={onNewOrder}
-          className="mt-4 px-4 py-2 rounded-md text-sm"
+          className="px-4 py-2 rounded-md text-sm"
           style={{ background: "var(--forest)", color: "var(--paper)" }}
         >
           Fazer nova reserva
