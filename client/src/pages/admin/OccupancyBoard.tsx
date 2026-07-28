@@ -1,5 +1,8 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getOccupancy, type OccupancySlot } from "../../api/activities";
+import { Users } from "lucide-react";
+import { Modal } from "../../components/Modal";
+import { getOccupancy, type ActivityOccupancy, type OccupancySlot } from "../../api/activities";
 
 // Cor do card por lotação: verde = vazio/com vagas, amarelo = enchendo, vermelho = esgotado.
 function slotColors(s: OccupancySlot): { border: string; bg: string } {
@@ -9,8 +12,11 @@ function slotColors(s: OccupancySlot): { border: string; bg: string } {
   return { border: "var(--moss)", bg: "var(--moss-light)" };
 }
 
+type Detail = { activityName: string; slot: OccupancySlot } | null;
+
 export function OccupancyBoard({ hotelId, date }: { hotelId: string; date: string }) {
   const enabled = !!hotelId && hotelId !== "all" && !!date;
+  const [detail, setDetail] = useState<Detail>(null);
   const { data, isLoading } = useQuery({
     queryKey: ["occupancy", hotelId, date],
     queryFn: () => getOccupancy(hotelId, date),
@@ -23,7 +29,7 @@ export function OccupancyBoard({ hotelId, date }: { hotelId: string; date: strin
   }
   if (isLoading) return <p className="text-sm opacity-60">Carregando ocupação…</p>;
 
-  const activities = data?.activities ?? [];
+  const activities: ActivityOccupancy[] = data?.activities ?? [];
   if (activities.length === 0) {
     return <p className="text-sm opacity-60">Nenhuma atividade com horários neste dia.</p>;
   }
@@ -40,6 +46,7 @@ export function OccupancyBoard({ hotelId, date }: { hotelId: string; date: strin
             <span style={{ width: 10, height: 10, borderRadius: 3, background: l.c, display: "inline-block" }} /> {l.t}
           </span>
         ))}
+        <span className="opacity-60">· Clique num card para ver os nomes agendados</span>
       </div>
 
       {activities.map((a) => (
@@ -48,39 +55,67 @@ export function OccupancyBoard({ hotelId, date }: { hotelId: string; date: strin
           <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(190px, 1fr))" }}>
             {a.slots.map((s) => {
               const c = slotColors(s);
+              const clickable = s.guests.length > 0;
               return (
-                <div
+                <button
                   key={s.time}
-                  className="rounded-lg p-3 relative group"
-                  style={{ background: c.bg, border: `1px solid ${c.border}`, borderLeft: `5px solid ${c.border}`, cursor: s.guests.length ? "help" : "default" }}
+                  type="button"
+                  onClick={() => clickable && setDetail({ activityName: a.activityName, slot: s })}
+                  className="rounded-lg p-3 text-left"
+                  style={{
+                    background: c.bg,
+                    border: `1px solid ${c.border}`,
+                    borderLeft: `5px solid ${c.border}`,
+                    cursor: clickable ? "pointer" : "default",
+                  }}
                 >
                   <div className="text-sm font-semibold" style={{ color: "var(--forest)" }}>Horário: {s.time}</div>
                   <div className="text-xs mt-1" style={{ color: "var(--bark)" }}>Reservas: {s.reserved} pessoa(s)</div>
                   <div className="text-xs font-medium" style={{ color: c.border }}>
                     Disponível: {s.remaining} de {s.capacity}
                   </div>
-
-                  {/* Passe o mouse para conferir os nomes agendados neste horário */}
-                  {s.guests.length > 0 && (
-                    <div
-                      className="hidden group-hover:block absolute z-20 left-0 top-full mt-1 rounded-md p-2 shadow-lg"
-                      style={{ background: "var(--paper)", border: "1px solid var(--line)", minWidth: 180, maxHeight: 220, overflowY: "auto" }}
-                    >
-                      <div className="text-xs font-semibold mb-1" style={{ color: "var(--forest)" }}>Agendados ({s.reserved})</div>
-                      {s.guests.map((g, i) => (
-                        <div key={i} className="text-xs flex justify-between gap-3" style={{ color: "var(--bark)" }}>
-                          <span>{g.name}</span>
-                          {g.qty > 1 && <span className="opacity-60">{g.qty} pessoas</span>}
-                        </div>
-                      ))}
+                  {clickable && (
+                    <div className="text-xs mt-1.5 flex items-center gap-1 opacity-70" style={{ color: "var(--forest)" }}>
+                      <Users size={11} /> ver {s.guests.length} agendamento(s)
                     </div>
                   )}
-                </div>
+                </button>
               );
             })}
           </div>
         </div>
       ))}
+
+      {detail && (
+        <Modal
+          title={`${detail.activityName} — ${detail.slot.time}`}
+          onClose={() => setDetail(null)}
+        >
+          <div className="text-sm mb-3" style={{ color: "var(--bark)" }}>
+            <strong>{detail.slot.reserved}</strong> pessoa(s) agendada(s) · {detail.slot.remaining} vaga(s) livre(s) de {detail.slot.capacity}
+          </div>
+          <div className="space-y-1.5 overflow-y-auto" style={{ maxHeight: "60vh" }}>
+            {detail.slot.guests.map((g, i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between gap-3 rounded-md px-3 py-2"
+                style={{ background: "var(--cream)", border: "1px solid var(--line)" }}
+              >
+                <div>
+                  <div className="text-sm font-medium" style={{ color: "var(--forest)" }}>
+                    {i + 1}. {g.name}
+                  </div>
+                  {g.phone && <div className="text-xs opacity-60">{g.phone}</div>}
+                </div>
+                <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: "var(--moss-light)", color: "var(--moss)" }}>
+                  {g.qty} pessoa(s)
+                </span>
+              </div>
+            ))}
+            {detail.slot.guests.length === 0 && <p className="text-sm opacity-60">Nenhum agendamento neste horário.</p>}
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }
