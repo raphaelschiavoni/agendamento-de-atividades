@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Users } from "lucide-react";
 import { Modal } from "../../components/Modal";
 import { getOccupancy, type ActivityOccupancy, type OccupancySlot } from "../../api/activities";
+import { displayTime } from "../../lib/schedule";
 
 // Cor do card por lotação: verde = vazio/com vagas, amarelo = enchendo, vermelho = esgotado.
 function slotColors(s: OccupancySlot): { border: string; bg: string } {
@@ -69,7 +70,7 @@ export function OccupancyBoard({ hotelId, date }: { hotelId: string; date: strin
                     cursor: clickable ? "pointer" : "default",
                   }}
                 >
-                  <div className="text-sm font-semibold" style={{ color: "var(--forest)" }}>Horário: {s.time}</div>
+                  <div className="text-sm font-semibold" style={{ color: "var(--forest)" }}>{a.allDay ? "Dia todo" : `Horário: ${s.time}`}</div>
                   <div className="text-xs mt-1" style={{ color: "var(--bark)" }}>Reservas: {s.reserved} pessoa(s)</div>
                   <div className="text-xs font-medium" style={{ color: c.border }}>
                     Disponível: {s.remaining} de {s.capacity}
@@ -88,7 +89,7 @@ export function OccupancyBoard({ hotelId, date }: { hotelId: string; date: strin
 
       {detail && (
         <Modal
-          title={`${detail.activityName} — ${detail.slot.time}`}
+          title={`${detail.activityName} — ${displayTime(detail.slot.time)}`}
           onClose={() => setDetail(null)}
         >
           <div className="text-sm mb-3" style={{ color: "var(--bark)" }}>

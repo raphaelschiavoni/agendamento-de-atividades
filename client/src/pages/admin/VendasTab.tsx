@@ -8,6 +8,7 @@ import { EditBookingModal } from "./EditBookingModal";
 import { OccupancyBoard } from "./OccupancyBoard";
 import { CATEGORY_META } from "../../lib/constants";
 import { formatBRL, isoDate } from "../../lib/format";
+import { whenText } from "../../lib/schedule";
 import type { AdminUser, Booking } from "../../types";
 
 export function VendasTab({ user }: { user: AdminUser }) {
@@ -147,7 +148,7 @@ export function VendasTab({ user }: { user: AdminUser }) {
                 <span className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: "var(--gold-light)", color: "var(--gold)" }}>{b.voucherCode}</span>
               </div>
               <div className="text-xs opacity-60">
-                {b.hotelName} · {b.date} às {b.time} · {b.qty} pessoa(s) · {CATEGORY_META[b.category].label} · {b.customer?.name} ({b.customer?.phone})
+                {b.hotelName} · {b.date} {whenText(b.time)} · {b.qty} pessoa(s) · {CATEGORY_META[b.category].label} · {b.customer?.name} ({b.customer?.phone})
               </div>
             </div>
             <div className="flex items-center gap-2">

@@ -52,6 +52,8 @@ export function ActivityEditor({
       schedule: {},
       prices: { hospede: 0, visitante: 0, dayuse: 0, passaporte: 0 },
       categoryCapacities: {},
+      allDay: false,
+      dailyCapacity: 0,
     }
   );
 
@@ -88,6 +90,21 @@ export function ActivityEditor({
     }
     const weekdayNums = Object.keys(weekdays).map(Number).sort((a, b) => a - b);
 
+    // Atividade dia todo: sem agenda de horários; usa dailyCapacity como total/dia.
+    if (form.allDay) {
+      onSave({
+        ...form,
+        tags,
+        schedule: {},
+        times: [],
+        weekdays: [],
+        allowedDates: [],
+        weekdayCapacities: {},
+        categoryCapacities: {},
+      });
+      return;
+    }
+
     onSave({
       ...form,
       tags,
@@ -115,17 +132,44 @@ export function ActivityEditor({
         </div>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Duração (min)" value={form.durationMin} onChange={(v) => setForm((f) => ({ ...f, durationMin: Number(v) || 0 }))} />
-          <Field label="Vagas padrão por horário" value={form.capacity} onChange={(v) => setForm((f) => ({ ...f, capacity: Number(v) || 0 }))} />
+          {!form.allDay && (
+            <Field label="Vagas padrão por horário" value={form.capacity} onChange={(v) => setForm((f) => ({ ...f, capacity: Number(v) || 0 }))} />
+          )}
         </div>
 
-        <div>
-          <label className="text-xs font-medium opacity-70 mb-1 block">Agenda da semana</label>
-          <AgendaEditor schedule={schedule} onChange={setSchedule} defaultCapacity={form.capacity} />
-          <p className="text-xs opacity-50 mt-1">
-            Cada dia tem seus horários, e cada horário suas vagas (em branco = padrão {form.capacity}).
-            Use "Datas pontuais" para eventos em dias específicos.
-          </p>
-        </div>
+        {/* Modo de disponibilidade: por horário (agenda) ou o dia todo */}
+        <label className="flex items-center gap-2 text-sm rounded-md p-2.5 cursor-pointer" style={{ background: "var(--cream)", border: "1px solid var(--line)" }}>
+          <input
+            type="checkbox"
+            checked={form.allDay}
+            onChange={(e) => setForm((f) => ({ ...f, allDay: e.target.checked }))}
+          />
+          <span>
+            <span style={{ color: "var(--forest)", fontWeight: 600 }}>Disponível o dia todo</span> (sem horário fixo — não precisa de agendamento por hora)
+          </span>
+        </label>
+
+        {form.allDay ? (
+          <div>
+            <Field
+              label="Vagas por dia (total de pessoas)"
+              value={form.dailyCapacity}
+              onChange={(v) => setForm((f) => ({ ...f, dailyCapacity: Number(v) || 0 }))}
+            />
+            <p className="text-xs opacity-50 mt-1">
+              O cliente escolhe só a data. Quando somar {form.dailyCapacity || "N"} pessoa(s) no dia, fecha para aquele dia.
+            </p>
+          </div>
+        ) : (
+          <div>
+            <label className="text-xs font-medium opacity-70 mb-1 block">Agenda da semana</label>
+            <AgendaEditor schedule={schedule} onChange={setSchedule} defaultCapacity={form.capacity} />
+            <p className="text-xs opacity-50 mt-1">
+              Cada dia tem seus horários, e cada horário suas vagas (em branco = padrão {form.capacity}).
+              Use "Datas pontuais" para eventos em dias específicos.
+            </p>
+          </div>
+        )}
 
         <div>
           <label className="text-xs font-medium opacity-70 mb-1 block">Vagas por categoria (por horário)</label>

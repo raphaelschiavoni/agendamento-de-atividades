@@ -14,8 +14,29 @@ export function isKidsActivity(name: string): boolean {
 const BR_OFFSET = "-03:00";
 const BOOKING_TOLERANCE_MIN = 10;
 
-/** Um horário só pode ser agendado até o início + 10 min de tolerância. */
+// Marcador de horário para atividades "dia todo" (sem horário fixo).
+export const ALL_DAY_TIME = "00:00";
+export function isAllDaySlot(time: string): boolean {
+  return time.slice(0, 5) === ALL_DAY_TIME;
+}
+/** Exibe "Dia todo" no lugar do marcador interno. */
+export function displayTime(time: string): string {
+  return isAllDaySlot(time) ? "Dia todo" : time.slice(0, 5);
+}
+/** Rótulo do horário para frases ("às 09:00" ou "Dia todo"). */
+export function whenText(time: string): string {
+  return isAllDaySlot(time) ? "Dia todo" : `às ${time.slice(0, 5)}`;
+}
+
+/** Data de hoje no fuso de Brasília ('YYYY-MM-DD'). */
+function brToday(): string {
+  const d = new Date(Date.now() - 3 * 3600_000);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+}
+
+/** Um horário só pode ser agendado até o início + 10 min; dia todo vale por data (hoje/futuro). */
 export function isSlotBookable(date: string, time: string): boolean {
+  if (isAllDaySlot(time)) return date >= brToday();
   const start = new Date(`${date}T${time.slice(0, 5)}:00${BR_OFFSET}`).getTime();
   return Date.now() <= start + BOOKING_TOLERANCE_MIN * 60_000;
 }

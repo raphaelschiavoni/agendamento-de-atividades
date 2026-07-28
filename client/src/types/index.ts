@@ -30,6 +30,9 @@ export interface Activity {
   prices: Record<Category, number>;
   // Vagas por categoria por horário: ausente = sem limite; 0 = não aparece na categoria.
   categoryCapacities: Partial<Record<Category, number>>;
+  // Atividade disponível o dia todo (sem horário fixo), limitada por dailyCapacity total/dia.
+  allDay: boolean;
+  dailyCapacity: number;
 }
 
 // Um horário da agenda; capacity ausente => capacidade padrão da atividade.

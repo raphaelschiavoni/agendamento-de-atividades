@@ -21,6 +21,28 @@ export function isSlotBookable(date: string, time: string, toleranceMin = BOOKIN
   return Date.now() <= slotStartMs(date, time) + toleranceMin * 60_000;
 }
 
+// Marcador de horário para atividades "dia todo" (sem horário fixo).
+export const ALL_DAY_TIME = "00:00";
+export function isAllDaySlot(time: string): boolean {
+  return time.slice(0, 5) === ALL_DAY_TIME;
+}
+
+/** Data de hoje no fuso de Brasília ('YYYY-MM-DD'). */
+export function brToday(): string {
+  const d = new Date(Date.now() - 3 * 3600_000); // BR = UTC-3
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+}
+
+/** Data agendável (hoje ou futuro, em Brasília) — usado nas atividades dia todo. */
+export function isDateBookable(date: string): boolean {
+  return date >= brToday();
+}
+
+/** Regra unificada: atividade dia todo vale por data; com horário, pela hora + tolerância. */
+export function slotBookable(date: string, time: string): boolean {
+  return isAllDaySlot(time) ? isDateBookable(date) : isSlotBookable(date, time);
+}
+
 export type BookingStatus = "pendente" | "pago" | "cancelado";
 
 export interface HotelDTO {
@@ -53,6 +75,9 @@ export interface ActivityDTO {
   prices: Record<Category, number>;
   // Vagas por categoria por horário: ausente = sem limite; 0 = categoria desabilitada.
   categoryCapacities: Partial<Record<Category, number>>;
+  // Atividade disponível o dia todo (sem horário fixo), limitada por dailyCapacity total/dia.
+  allDay: boolean;
+  dailyCapacity: number;
 }
 
 // Um horário da agenda; capacity ausente => capacidade padrão da atividade.

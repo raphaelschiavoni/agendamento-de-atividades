@@ -1,6 +1,6 @@
 import type { Pool, PoolClient } from "pg";
 import { pool } from "../../db/pool.js";
-import { effectiveCapacity, isSlotBookable, scheduleHasContent, type ActivitySchedule } from "../../types.js";
+import { ALL_DAY_TIME, effectiveCapacity, scheduleHasContent, slotBookable, type ActivitySchedule } from "../../types.js";
 
 export interface SlotAvailability {
   time: string;
@@ -28,13 +28,21 @@ export async function getEffectiveSlots(q: Queryable, activityId: string, date: 
     allowed_dates: string[];
     weekday_capacities: Record<string, number> | null;
     schedule: ActivitySchedule | null;
+    all_day: boolean;
+    daily_capacity: number;
   }>(
-    "SELECT capacity, weekdays, allowed_dates, weekday_capacities, schedule FROM activities WHERE id = $1",
+    "SELECT capacity, weekdays, allowed_dates, weekday_capacities, schedule, all_day, daily_capacity FROM activities WHERE id = $1",
     [activityId]
   );
   if (rows.length === 0) return null;
   const a = rows[0];
   const weekday = new Date(`${date}T12:00:00`).getDay();
+
+  // Atividade disponível o dia todo: um único "slot" por dia (marcador 00:00),
+  // com capacidade = total de vagas do dia. Vale todos os dias.
+  if (a.all_day) {
+    return [{ time: ALL_DAY_TIME, capacity: a.daily_capacity }];
+  }
 
   if (scheduleHasContent(a.schedule)) {
     const slots = a.schedule?.dates?.[date] ?? a.schedule?.weekdays?.[String(weekday)] ?? [];
@@ -75,14 +83,15 @@ export interface OccupancyGuest {
 export interface ActivityOccupancy {
   activityId: string;
   activityName: string;
+  allDay: boolean;
   slots: { time: string; capacity: number; reserved: number; remaining: number; guests: OccupancyGuest[] }[];
 }
 
 /** Quadro de ocupação por horário de todas as atividades ativas de um hotel numa data,
  *  com os nomes das pessoas agendadas em cada horário (para conferência). */
 export async function getHotelOccupancy(hotelId: string, date: string): Promise<ActivityOccupancy[]> {
-  const { rows: acts } = await pool.query<{ id: string; name: string }>(
-    "SELECT id, name FROM activities WHERE hotel_id = $1 AND active = true ORDER BY name",
+  const { rows: acts } = await pool.query<{ id: string; name: string; all_day: boolean }>(
+    "SELECT id, name, all_day FROM activities WHERE hotel_id = $1 AND active = true ORDER BY name",
     [hotelId]
   );
   const out: ActivityOccupancy[] = [];
@@ -107,6 +116,7 @@ export async function getHotelOccupancy(hotelId: string, date: string): Promise<
     out.push({
       activityId: a.id,
       activityName: a.name,
+      allDay: a.all_day,
       slots: slots.map((s) => ({
         time: s.time,
         capacity: s.capacity,
@@ -140,8 +150,8 @@ export async function getAvailabilityForDate(
 ): Promise<SlotAvailability[]> {
   let slots = await getEffectiveSlots(pool, activityId, date);
   if (!slots || slots.length === 0) return [];
-  // No fluxo de agendamento, esconde horários que já começaram (+ tolerância).
-  if (opts?.hideExpired) slots = slots.filter((s) => isSlotBookable(date, s.time));
+  // No fluxo de agendamento, esconde horários já passados (dia todo vale por data).
+  if (opts?.hideExpired) slots = slots.filter((s) => slotBookable(date, s.time));
   if (slots.length === 0) return [];
 
   const quota = category ? await getCategoryQuota(pool, activityId, category) : null;

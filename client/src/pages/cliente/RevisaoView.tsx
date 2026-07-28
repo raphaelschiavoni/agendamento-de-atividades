@@ -3,6 +3,7 @@ import { Calendar, Clock, Home, MapPin, Phone, Sparkles, User } from "lucide-rea
 import { BackRow } from "../../components/BackRow";
 import { CATEGORY_META } from "../../lib/constants";
 import { formatBRL } from "../../lib/format";
+import { displayTime } from "../../lib/schedule";
 import type { CartItem, Customer, Hotel } from "../../types";
 
 export function RevisaoView({
@@ -84,7 +85,7 @@ export function RevisaoView({
               <div className="text-xs opacity-60 mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
                 <span className="flex items-center gap-1"><MapPin size={11} /> {item.hotelName}</span>
                 <span className="flex items-center gap-1"><Calendar size={11} /> {item.date}</span>
-                <span className="flex items-center gap-1"><Clock size={11} /> {item.time}</span>
+                <span className="flex items-center gap-1"><Clock size={11} /> {displayTime(item.time)}</span>
                 <span className="px-1.5 rounded-full" style={{ background: CATEGORY_META[item.category].bg, color: CATEGORY_META[item.category].color }}>{CATEGORY_META[item.category].label}</span>
               </div>
               <div className="text-xs opacity-70 mt-1">

@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Minus, Plus } from "lucide-react";
 import { Modal } from "../../components/Modal";
 import { MonthCalendar } from "../../components/MonthCalendar";
 import { getActivity, getAvailability } from "../../api/activities";
 import { editBookingAdmin } from "../../api/bookings";
-import { calendarDates, calendarWeekdays, isKidsActivity, isSlotBookable, slotsForDate } from "../../lib/schedule";
+import { ALL_DAY_TIME, calendarDates, calendarWeekdays, isKidsActivity, isSlotBookable, slotsForDate } from "../../lib/schedule";
 import { ApiError } from "../../api/client";
 import type { Booking } from "../../types";
 
@@ -36,10 +36,13 @@ export function EditBookingModal({
     enabled: !!date,
   });
 
-  // Esconde horários já passados, mas mantém o horário atual da reserva (edição operacional).
-  const daySlots = (activity ? slotsForDate(activity, date) : []).filter(
-    (s) => isSlotBookable(date, s.time) || (date === booking.date && s.time === booking.time)
-  );
+  const isAllDay = !!activity?.allDay;
+  // Dia todo: um único "slot"; senão esconde horários passados (mantendo o da reserva).
+  const daySlots = isAllDay
+    ? [{ time: ALL_DAY_TIME, capacity: activity!.dailyCapacity }]
+    : (activity ? slotsForDate(activity, date) : []).filter(
+        (s) => isSlotBookable(date, s.time) || (date === booking.date && s.time === booking.time)
+      );
   const remainingByTime = new Map((avail?.times ?? []).map((t) => [t.time, t.remaining]));
   // No slot original, a própria reserva já ocupa lugares — soma de volta para exibir o real disponível.
   const availableAt = (t: string) => {
@@ -49,6 +52,11 @@ export function EditBookingModal({
   };
   const remaining = time ? availableAt(time) : 0;
   const canAddMore = qty < remaining;
+
+  // Dia todo: horário sempre fixo no marcador (sem seleção de hora).
+  useEffect(() => {
+    if (isAllDay) setTime(ALL_DAY_TIME);
+  }, [isAllDay, date]);
 
   async function save() {
     if (!time) return;
@@ -74,12 +82,17 @@ export function EditBookingModal({
         <div className="text-xs font-medium mb-1.5 opacity-70">Data</div>
         <MonthCalendar
           value={date}
-          onChange={(d) => { setDate(d); setTime(null); }}
-          allowedWeekdays={activity ? calendarWeekdays(activity) : undefined}
-          allowedDates={activity ? calendarDates(activity) : undefined}
+          onChange={(d) => { setDate(d); if (!isAllDay) setTime(null); }}
+          allowedWeekdays={isAllDay ? [] : (activity ? calendarWeekdays(activity) : undefined)}
+          allowedDates={isAllDay ? [] : (activity ? calendarDates(activity) : undefined)}
         />
       </div>
 
+      {isAllDay ? (
+        <div className="mb-3 text-xs px-2.5 py-2 rounded-md" style={{ background: "var(--moss-light)", color: "var(--moss)" }}>
+          Atividade disponível o dia todo. {remaining} vaga(s) restante(s) nesta data.
+        </div>
+      ) : (
       <div className="mb-3">
         <div className="text-xs font-medium mb-1.5 opacity-70">Horário</div>
         <div className="flex flex-wrap gap-2">
@@ -108,6 +121,7 @@ export function EditBookingModal({
           })}
         </div>
       </div>
+      )}
 
       {time && (
         <div className="mb-4 space-y-3">

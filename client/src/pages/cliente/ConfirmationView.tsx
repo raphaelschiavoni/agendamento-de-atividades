@@ -1,6 +1,7 @@
 import { CheckCircle2, Ticket } from "lucide-react";
 import { CATEGORY_META } from "../../lib/constants";
 import { formatBRL } from "../../lib/format";
+import { whenText } from "../../lib/schedule";
 import type { Booking } from "../../types";
 
 export function ConfirmationView({ vouchers, onNewOrder }: { vouchers: Booking[]; onNewOrder: () => void }) {
@@ -27,7 +28,7 @@ export function ConfirmationView({ vouchers, onNewOrder }: { vouchers: Booking[]
                 <Ticket size={28} color={CATEGORY_META[v.category].color} />
                 <div className="flex-1">
                   <div className="text-sm font-medium" style={{ color: "var(--forest)" }}>{v.activityName} — {v.hotelName}</div>
-                  <div className="text-xs opacity-60">{v.date} às {v.time} · {participantes} · {CATEGORY_META[v.category].label}</div>
+                  <div className="text-xs opacity-60">{v.date} {whenText(v.time)} · {participantes} · {CATEGORY_META[v.category].label}</div>
                   {crossHotel && (
                     <div className="text-xs mt-0.5" style={{ color: "var(--plum)" }}>✨ Passaporte dos Sonhos — benefício da sua hospedagem</div>
                   )}

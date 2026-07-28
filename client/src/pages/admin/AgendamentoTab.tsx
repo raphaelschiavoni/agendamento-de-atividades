@@ -5,6 +5,7 @@ import { listHotelsAdmin } from "../../api/hotels";
 import { approveBookingAdmin, listBookingsAdmin } from "../../api/bookings";
 import { CATEGORY_META } from "../../lib/constants";
 import { formatBRL } from "../../lib/format";
+import { whenText } from "../../lib/schedule";
 import type { AdminUser, Booking } from "../../types";
 
 // Semáforo de lotação do horário: verde = vazio, amarelo = tem vaga, vermelho = esgotado.
@@ -147,7 +148,7 @@ export function AgendamentoTab({ user }: { user: AdminUser }) {
                           )}
                         </div>
                         <div className="text-xs opacity-70 mt-1.5 space-y-0.5">
-                          <div className="flex items-center gap-1"><MapPin size={11} /> {b.hotelName} · {b.date} às {b.time}</div>
+                          <div className="flex items-center gap-1"><MapPin size={11} /> {b.hotelName} · {b.date} {whenText(b.time)}</div>
                           <div className="flex items-center gap-1">
                             <Phone size={11} /> {b.customer?.name} ({b.customer?.phone}) · {b.adults} adulto(s){b.children > 0 ? ` + ${b.children} criança(s)` : ""}
                           </div>

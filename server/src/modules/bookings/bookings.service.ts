@@ -1,6 +1,6 @@
 import { pool } from "../../db/pool.js";
 import { HttpError } from "../../middleware/error-handler.js";
-import { isKidsActivity, isSlotBookable, type CartItemInput, type CustomerInput, type OrderInput } from "../../types.js";
+import { ALL_DAY_TIME, isAllDaySlot, isKidsActivity, slotBookable, type CartItemInput, type CustomerInput, type OrderInput } from "../../types.js";
 import { getPaymentProvider } from "../payments/index.js";
 import { getNotificationProvider } from "../notifications/index.js";
 import { getAvailabilityForDate, getEffectiveSlots, getRemainingForSlotLocked } from "../availability/availability.service.js";
@@ -22,8 +22,9 @@ async function enrichAndValidateCartItem(item: CartItemInput, order: ResolvedOrd
     hotel_id: string;
     hotel_name: string;
     price_cents: number;
+    all_day: boolean;
   }>(
-    `SELECT a.name AS activity_name, a.hotel_id, h.name AS hotel_name, ap.price_cents
+    `SELECT a.name AS activity_name, a.hotel_id, h.name AS hotel_name, ap.price_cents, a.all_day
      FROM activities a
      JOIN hotels h ON h.id = a.hotel_id
      JOIN activity_prices ap ON ap.activity_id = a.id AND ap.category = $2
@@ -34,6 +35,8 @@ async function enrichAndValidateCartItem(item: CartItemInput, order: ResolvedOrd
   if (item.qty < 1) throw new HttpError(400, "Quantidade deve ser maior que zero");
 
   const row = rows[0];
+  // Atividade dia todo: sem horário fixo — usa o marcador interno.
+  if (row.all_day) item.time = ALL_DAY_TIME;
 
   // Valida data + horário + capacidade pela agenda efetiva (fonte única).
   const slots = await getEffectiveSlots(pool, item.activityId, item.date);
@@ -44,8 +47,13 @@ async function enrichAndValidateCartItem(item: CartItemInput, order: ResolvedOrd
   if (!slot) {
     throw new HttpError(409, `${row.activity_name} não possui o horário ${item.time} nessa data.`);
   }
-  if (!isSlotBookable(item.date, item.time)) {
-    throw new HttpError(409, `O horário ${item.time.slice(0, 5)} de ${row.activity_name} já passou. Escolha outro horário ou o próximo dia.`);
+  if (!slotBookable(item.date, item.time)) {
+    throw new HttpError(
+      409,
+      row.all_day
+        ? `${row.activity_name} não pode ser agendada para uma data que já passou.`
+        : `O horário ${item.time.slice(0, 5)} de ${row.activity_name} já passou. Escolha outro horário ou o próximo dia.`
+    );
   }
   const adults = item.adults ?? item.qty;
   const children = item.children ?? 0;
@@ -158,9 +166,9 @@ export async function finalizeBookingsFromCharge(chargeId: string) {
     const items = [...charge.cart_snapshot].sort((a, b) => (slotSortKey(a) < slotSortKey(b) ? -1 : 1));
 
     for (const item of items) {
-      if (!isSlotBookable(item.date, item.time)) {
+      if (!slotBookable(item.date, item.time)) {
         await client.query("ROLLBACK");
-        throw new HttpError(409, `O horário ${item.time.slice(0, 5)} de ${item.activityName} já passou — escolha outro horário ou o próximo dia.`);
+        throw new HttpError(409, `${item.activityName}: data/horário já passou — escolha outro ou o próximo dia.`);
       }
       await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [slotSortKey(item)]);
       const remaining = await getRemainingForSlotLocked(client, item.activityId, item.date, item.time, item.category);
@@ -348,7 +356,7 @@ async function buildWhatsAppMessage(booking: bookingsRepo.BookingRow): Promise<s
     `Atividade: ${booking.activity_name}\n` +
     `Categoria: ${CATEGORY_LABELS[booking.category] ?? booking.category}\n` +
     hospedagem +
-    `Data/Hora: ${booking.booking_date} às ${booking.booking_time.slice(0, 5)}\n` +
+    `Data/Hora: ${booking.booking_date}${isAllDaySlot(booking.booking_time) ? " — Dia todo (sem horário fixo)" : ` às ${booking.booking_time.slice(0, 5)}`}\n` +
     `Participantes: ${participantes}\n` +
     `Valor: ${formatBRL(booking.total_cents)} — pago via Pix ✅\n` +
     `Cliente: ${booking.customer_name} — ${booking.customer_phone}\n` +

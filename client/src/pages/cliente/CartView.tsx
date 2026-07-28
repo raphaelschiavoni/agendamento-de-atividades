@@ -2,6 +2,7 @@ import { Trash2 } from "lucide-react";
 import { BackRow } from "../../components/BackRow";
 import { CATEGORY_META } from "../../lib/constants";
 import { formatBRL } from "../../lib/format";
+import { whenText } from "../../lib/schedule";
 import type { CartItem } from "../../types";
 
 export function CartView({
@@ -29,7 +30,7 @@ export function CartView({
               <div>
                 <div className="text-sm font-medium" style={{ color: "var(--forest)" }}>{item.activityName}</div>
                 <div className="text-xs opacity-60">
-                  {item.date} às {item.time} · {item.qty} pessoa(s) · {CATEGORY_META[item.category].label}
+                  {item.date} {whenText(item.time)} · {item.qty} pessoa(s) · {CATEGORY_META[item.category].label}
                 </div>
               </div>
               <div className="flex items-center gap-3">

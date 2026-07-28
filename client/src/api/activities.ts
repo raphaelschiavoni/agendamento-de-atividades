@@ -26,6 +26,7 @@ export interface OccupancySlot {
 export interface ActivityOccupancy {
   activityId: string;
   activityName: string;
+  allDay: boolean;
   slots: OccupancySlot[];
 }
 export const getOccupancy = (hotelId: string, date: string) =>
