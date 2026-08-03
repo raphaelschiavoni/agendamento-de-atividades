@@ -76,9 +76,11 @@ function dedupeSorted(slots: EffectiveSlot[]): EffectiveSlot[] {
 }
 
 export interface OccupancyGuest {
+  bookingId: string;
   name: string;
   phone: string;
   qty: number;
+  used: boolean;
 }
 export interface ActivityOccupancy {
   activityId: string;
@@ -99,8 +101,8 @@ export async function getHotelOccupancy(hotelId: string, date: string): Promise<
     const slots = await getAvailabilityForDate(a.id, date);
     if (slots.length === 0) continue;
 
-    const { rows: guestRows } = await pool.query<{ booking_time: string; customer_name: string; customer_phone: string; qty: number }>(
-      `SELECT to_char(booking_time, 'HH24:MI') AS booking_time, customer_name, customer_phone, qty
+    const { rows: guestRows } = await pool.query<{ id: string; booking_time: string; customer_name: string; customer_phone: string; qty: number; used: boolean }>(
+      `SELECT id, to_char(booking_time, 'HH24:MI') AS booking_time, customer_name, customer_phone, qty, used
        FROM bookings
        WHERE activity_id = $1 AND booking_date = $2 AND status <> 'cancelado'
        ORDER BY booking_time, customer_name`,
@@ -109,7 +111,7 @@ export async function getHotelOccupancy(hotelId: string, date: string): Promise<
     const guestsByTime = new Map<string, OccupancyGuest[]>();
     for (const g of guestRows) {
       const list = guestsByTime.get(g.booking_time) ?? [];
-      list.push({ name: g.customer_name, phone: g.customer_phone, qty: g.qty });
+      list.push({ bookingId: g.id, name: g.customer_name, phone: g.customer_phone, qty: g.qty, used: g.used });
       guestsByTime.set(g.booking_time, list);
     }
 

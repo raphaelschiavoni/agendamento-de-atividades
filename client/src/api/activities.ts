@@ -12,9 +12,11 @@ export const getAvailability = (id: string, date: string, category?: string) =>
 
 // admin: quadro de ocupação por horário
 export interface OccupancyGuest {
+  bookingId: string;
   name: string;
   phone: string;
   qty: number;
+  used: boolean;
 }
 export interface OccupancySlot {
   time: string;

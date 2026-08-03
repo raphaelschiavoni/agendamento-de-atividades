@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Users } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { CheckCircle2, Users } from "lucide-react";
 import { Modal } from "../../components/Modal";
 import { getOccupancy, type ActivityOccupancy, type OccupancySlot } from "../../api/activities";
+import { markUsedAdmin } from "../../api/bookings";
 import { displayTime } from "../../lib/schedule";
 
 // Cor do card por lotação: verde = vazio/com vagas, amarelo = enchendo, vermelho = esgotado.
@@ -13,16 +14,26 @@ function slotColors(s: OccupancySlot): { border: string; bg: string } {
   return { border: "var(--moss)", bg: "var(--moss-light)" };
 }
 
-type Detail = { activityName: string; slot: OccupancySlot } | null;
+// Guarda apenas as chaves; o slot exibido é lido ao vivo dos dados (reflete "utilizado").
+type Detail = { activityId: string; time: string } | null;
 
 export function OccupancyBoard({ hotelId, date }: { hotelId: string; date: string }) {
   const enabled = !!hotelId && hotelId !== "all" && !!date;
   const [detail, setDetail] = useState<Detail>(null);
+  const queryClient = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: ["occupancy", hotelId, date],
     queryFn: () => getOccupancy(hotelId, date),
     enabled,
     refetchInterval: 30_000,
+  });
+
+  const markUsedMutation = useMutation({
+    mutationFn: markUsedAdmin,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["occupancy"] });
+      queryClient.invalidateQueries({ queryKey: ["bookings-admin"] });
+    },
   });
 
   if (!enabled) {
@@ -34,6 +45,10 @@ export function OccupancyBoard({ hotelId, date }: { hotelId: string; date: strin
   if (activities.length === 0) {
     return <p className="text-sm opacity-60">Nenhuma atividade com horários neste dia.</p>;
   }
+
+  // Slot atualmente aberto no popup, lido ao vivo dos dados.
+  const detailActivity = detail ? activities.find((a) => a.activityId === detail.activityId) : undefined;
+  const detailSlot = detailActivity?.slots.find((s) => s.time === detail?.time);
 
   return (
     <div className="space-y-6">
@@ -47,7 +62,7 @@ export function OccupancyBoard({ hotelId, date }: { hotelId: string; date: strin
             <span style={{ width: 10, height: 10, borderRadius: 3, background: l.c, display: "inline-block" }} /> {l.t}
           </span>
         ))}
-        <span className="opacity-60">· Clique num card para ver os nomes agendados</span>
+        <span className="opacity-60">· Clique num card para ver os nomes e marcar utilizado</span>
       </div>
 
       {activities.map((a) => (
@@ -61,7 +76,7 @@ export function OccupancyBoard({ hotelId, date }: { hotelId: string; date: strin
                 <button
                   key={s.time}
                   type="button"
-                  onClick={() => clickable && setDetail({ activityName: a.activityName, slot: s })}
+                  onClick={() => clickable && setDetail({ activityId: a.activityId, time: s.time })}
                   className="rounded-lg p-3 text-left"
                   style={{
                     background: c.bg,
@@ -87,18 +102,18 @@ export function OccupancyBoard({ hotelId, date }: { hotelId: string; date: strin
         </div>
       ))}
 
-      {detail && (
+      {detail && detailActivity && detailSlot && (
         <Modal
-          title={`${detail.activityName} — ${displayTime(detail.slot.time)}`}
+          title={`${detailActivity.activityName} — ${displayTime(detailSlot.time)}`}
           onClose={() => setDetail(null)}
         >
           <div className="text-sm mb-3" style={{ color: "var(--bark)" }}>
-            <strong>{detail.slot.reserved}</strong> pessoa(s) agendada(s) · {detail.slot.remaining} vaga(s) livre(s) de {detail.slot.capacity}
+            <strong>{detailSlot.reserved}</strong> pessoa(s) agendada(s) · {detailSlot.remaining} vaga(s) livre(s) de {detailSlot.capacity}
           </div>
           <div className="space-y-1.5 overflow-y-auto" style={{ maxHeight: "60vh" }}>
-            {detail.slot.guests.map((g, i) => (
+            {detailSlot.guests.map((g, i) => (
               <div
-                key={i}
+                key={g.bookingId}
                 className="flex items-center justify-between gap-3 rounded-md px-3 py-2"
                 style={{ background: "var(--cream)", border: "1px solid var(--line)" }}
               >
@@ -108,12 +123,28 @@ export function OccupancyBoard({ hotelId, date }: { hotelId: string; date: strin
                   </div>
                   {g.phone && <div className="text-xs opacity-60">{g.phone}</div>}
                 </div>
-                <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: "var(--moss-light)", color: "var(--moss)" }}>
-                  {g.qty} pessoa(s)
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: "var(--moss-light)", color: "var(--moss)" }}>
+                    {g.qty} pessoa(s)
+                  </span>
+                  {g.used ? (
+                    <span className="text-xs px-2 py-1 rounded-md flex items-center gap-1" style={{ background: "var(--moss-light)", color: "var(--moss)" }}>
+                      <CheckCircle2 size={13} /> Utilizado
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => markUsedMutation.mutate(g.bookingId)}
+                      disabled={markUsedMutation.isPending}
+                      className="text-xs px-2.5 py-1 rounded-md flex items-center gap-1"
+                      style={{ background: "var(--moss)", color: "#fff" }}
+                    >
+                      <CheckCircle2 size={13} /> Marcar utilizado
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
-            {detail.slot.guests.length === 0 && <p className="text-sm opacity-60">Nenhum agendamento neste horário.</p>}
+            {detailSlot.guests.length === 0 && <p className="text-sm opacity-60">Nenhum agendamento neste horário.</p>}
           </div>
         </Modal>
       )}
