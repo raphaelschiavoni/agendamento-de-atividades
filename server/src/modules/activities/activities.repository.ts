@@ -18,6 +18,7 @@ interface ActivityRow {
   category_capacities: Partial<Record<Category, number>> | null;
   all_day: boolean;
   daily_capacity: number;
+  pair_booking: boolean;
 }
 
 // Mantém apenas categorias válidas com números >= 0 (0 = categoria desabilitada).
@@ -91,6 +92,7 @@ async function attachTimesAndPrices(rows: ActivityRow[]): Promise<ActivityDTO[]>
       categoryCapacities: normalizeCategoryCapacities(r.category_capacities),
       allDay: r.all_day ?? false,
       dailyCapacity: r.daily_capacity ?? 0,
+      pairBooking: r.pair_booking ?? false,
     };
   });
 }
@@ -140,6 +142,7 @@ export interface UpsertActivityInput {
   categoryCapacities: Partial<Record<Category, number>>;
   allDay: boolean;
   dailyCapacity: number;
+  pairBooking: boolean;
 }
 
 function genActivityId(): string {
@@ -152,9 +155,9 @@ export async function createActivity(input: UpsertActivityInput): Promise<Activi
     await client.query("BEGIN");
     const id = genActivityId();
     await client.query(
-      `INSERT INTO activities (id, hotel_id, name, description, duration_min, capacity, active, photo_url, tags, weekdays, allowed_dates, weekday_capacities, schedule, category_capacities, all_day, daily_capacity)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`,
-      [id, input.hotelId, input.name, input.description, input.durationMin, input.capacity, input.active, input.photo ?? null, input.tags, input.weekdays ?? [], input.allowedDates ?? [], JSON.stringify(input.weekdayCapacities ?? {}), JSON.stringify(input.schedule ?? {}), JSON.stringify(input.categoryCapacities ?? {}), input.allDay ?? false, input.dailyCapacity ?? 0]
+      `INSERT INTO activities (id, hotel_id, name, description, duration_min, capacity, active, photo_url, tags, weekdays, allowed_dates, weekday_capacities, schedule, category_capacities, all_day, daily_capacity, pair_booking)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)`,
+      [id, input.hotelId, input.name, input.description, input.durationMin, input.capacity, input.active, input.photo ?? null, input.tags, input.weekdays ?? [], input.allowedDates ?? [], JSON.stringify(input.weekdayCapacities ?? {}), JSON.stringify(input.schedule ?? {}), JSON.stringify(input.categoryCapacities ?? {}), input.allDay ?? false, input.dailyCapacity ?? 0, input.pairBooking ?? false]
     );
     await insertTimesAndPrices(client, id, input.times, input.prices);
     await client.query("COMMIT");
@@ -187,6 +190,7 @@ export async function updateActivity(id: string, input: Partial<UpsertActivityIn
          category_capacities = COALESCE($13, category_capacities),
          all_day = COALESCE($14, all_day),
          daily_capacity = COALESCE($15, daily_capacity),
+         pair_booking = COALESCE($16, pair_booking),
          updated_at = now()
        WHERE id = $1
        RETURNING id`,
@@ -198,6 +202,7 @@ export async function updateActivity(id: string, input: Partial<UpsertActivityIn
         input.categoryCapacities !== undefined ? JSON.stringify(input.categoryCapacities) : null,
         input.allDay ?? null,
         input.dailyCapacity ?? null,
+        input.pairBooking ?? null,
       ]
     );
     if (rows.length === 0) {

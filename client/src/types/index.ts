@@ -33,6 +33,8 @@ export interface Activity {
   // Atividade disponível o dia todo (sem horário fixo), limitada por dailyCapacity total/dia.
   allDay: boolean;
   dailyCapacity: number;
+  // Reserva em dupla: cada reserva vale por 2 pessoas (ex.: caiaque duplo).
+  pairBooking: boolean;
 }
 
 // Um horário da agenda; capacity ausente => capacidade padrão da atividade.

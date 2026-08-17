@@ -23,8 +23,9 @@ async function enrichAndValidateCartItem(item: CartItemInput, order: ResolvedOrd
     hotel_name: string;
     price_cents: number;
     all_day: boolean;
+    pair_booking: boolean;
   }>(
-    `SELECT a.name AS activity_name, a.hotel_id, h.name AS hotel_name, ap.price_cents, a.all_day
+    `SELECT a.name AS activity_name, a.hotel_id, h.name AS hotel_name, ap.price_cents, a.all_day, a.pair_booking
      FROM activities a
      JOIN hotels h ON h.id = a.hotel_id
      JOIN activity_prices ap ON ap.activity_id = a.id AND ap.category = $2
@@ -62,6 +63,11 @@ async function enrichAndValidateCartItem(item: CartItemInput, order: ResolvedOrd
   if (isKidsActivity(row.activity_name)) {
     if (adults > 0) throw new HttpError(409, `${row.activity_name} é exclusiva para crianças (Kids).`);
     if (children < 1) throw new HttpError(400, `${row.activity_name} exige ao menos 1 criança.`);
+  }
+
+  // Reserva em dupla: cada reserva vale por 2 pessoas (múltiplo de 2).
+  if (row.pair_booking && (item.qty < 2 || item.qty % 2 !== 0)) {
+    throw new HttpError(400, `${row.activity_name} é reservada em dupla (2 pessoas por caiaque).`);
   }
 
   // Optimistic (non-locking) pre-check for a fast fail + good UX; the authoritative

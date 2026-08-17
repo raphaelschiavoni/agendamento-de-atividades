@@ -22,9 +22,10 @@ export function ScheduleModal({
 }) {
   const isKids = isKidsActivity(activity.name);
   const isAllDay = activity.allDay;
+  const isPair = activity.pairBooking; // reserva em dupla (2 pessoas por caiaque)
   const [date, setDate] = useState<string>(isoDate(new Date()));
   const [time, setTime] = useState<string | null>(isAllDay ? ALL_DAY_TIME : null);
-  const [adults, setAdults] = useState(isKids ? 0 : 1);
+  const [adults, setAdults] = useState(isPair ? 2 : isKids ? 0 : 1);
   const [children, setChildren] = useState(isKids ? 1 : 0);
   const qty = adults + children;
 
@@ -48,12 +49,13 @@ export function ScheduleModal({
   }, [isAllDay, date, daySlots.length]);
 
   useEffect(() => {
-    setAdults(isKids ? 0 : 1);
+    setAdults(isPair ? 2 : isKids ? 0 : 1);
     setChildren(isKids ? 1 : 0);
-  }, [time, isKids]);
+  }, [time, isKids, isPair]);
 
   const price = activity.prices[category] || 0;
   const canAddMore = qty < remaining;
+  const canAddPair = qty + 2 <= remaining; // precisa de 2 vagas para +1 dupla
 
   return (
     <Modal onClose={onClose} title={activity.name}>
@@ -104,29 +106,49 @@ export function ScheduleModal({
 
       {time && (
         <div className="mb-4 space-y-3">
-          {isKids ? (
-            <div className="text-xs px-2.5 py-1.5 rounded-md" style={{ background: "var(--gold-light)", color: "var(--gold)" }}>
-              Atividade Kids — exclusiva para crianças (sem adultos).
-            </div>
+          {isPair ? (
+            <>
+              <div className="text-xs px-2.5 py-1.5 rounded-md" style={{ background: "var(--moss-light)", color: "var(--moss)" }}>
+                Reserva em dupla — cada caiaque leva 2 pessoas.
+              </div>
+              <Counter
+                label="Duplas (caiaques)"
+                sub="2 pessoas por caiaque"
+                value={adults / 2}
+                onDec={() => setAdults((a) => Math.max(2, a - 2))}
+                onInc={() => canAddPair && setAdults((a) => a + 2)}
+              />
+              <div className="text-xs opacity-60">
+                Total: {qty} pessoa(s) ({adults / 2} dupla{adults / 2 > 1 ? "s" : ""}) · máx. {remaining} disponíveis neste horário
+              </div>
+            </>
           ) : (
-            <Counter
-              label="Adultos"
-              sub="13 anos ou mais"
-              value={adults}
-              onDec={() => setAdults((a) => Math.max(1, a - 1))}
-              onInc={() => canAddMore && setAdults((a) => a + 1)}
-            />
+            <>
+              {isKids ? (
+                <div className="text-xs px-2.5 py-1.5 rounded-md" style={{ background: "var(--gold-light)", color: "var(--gold)" }}>
+                  Atividade Kids — exclusiva para crianças (sem adultos).
+                </div>
+              ) : (
+                <Counter
+                  label="Adultos"
+                  sub="13 anos ou mais"
+                  value={adults}
+                  onDec={() => setAdults((a) => Math.max(1, a - 1))}
+                  onInc={() => canAddMore && setAdults((a) => a + 1)}
+                />
+              )}
+              <Counter
+                label="Crianças"
+                sub="até 12 anos"
+                value={children}
+                onDec={() => setChildren((c) => Math.max(isKids ? 1 : 0, c - 1))}
+                onInc={() => canAddMore && setChildren((c) => c + 1)}
+              />
+              <div className="text-xs opacity-60">
+                Total: {qty} pessoa(s) · máx. {remaining} disponíveis neste horário
+              </div>
+            </>
           )}
-          <Counter
-            label="Crianças"
-            sub="até 12 anos"
-            value={children}
-            onDec={() => setChildren((c) => Math.max(isKids ? 1 : 0, c - 1))}
-            onInc={() => canAddMore && setChildren((c) => c + 1)}
-          />
-          <div className="text-xs opacity-60">
-            Total: {qty} pessoa(s) · máx. {remaining} disponíveis neste horário
-          </div>
         </div>
       )}
 

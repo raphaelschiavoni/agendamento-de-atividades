@@ -54,6 +54,7 @@ export function ActivityEditor({
       categoryCapacities: {},
       allDay: false,
       dailyCapacity: 0,
+      pairBooking: false,
     }
   );
 
@@ -169,6 +170,19 @@ export function ActivityEditor({
               Use "Datas pontuais" para eventos em dias específicos.
             </p>
           </div>
+        )}
+
+        {!form.allDay && (
+          <label className="flex items-center gap-2 text-sm rounded-md p-2.5 cursor-pointer" style={{ background: "var(--cream)", border: "1px solid var(--line)" }}>
+            <input
+              type="checkbox"
+              checked={form.pairBooking}
+              onChange={(e) => setForm((f) => ({ ...f, pairBooking: e.target.checked }))}
+            />
+            <span>
+              <span style={{ color: "var(--forest)", fontWeight: 600 }}>Reserva em dupla</span> (cada reserva vale 2 pessoas — ex.: caiaque de 2 lugares). O cliente escolhe quantas duplas.
+            </span>
+          </label>
         )}
 
         <div>
