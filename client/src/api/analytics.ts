@@ -10,7 +10,8 @@ export interface AnalyticsFilters {
 
 export interface AnalyticsSummary {
   totals: {
-    bookings: number;
+    orders: number; // pedidos/checkouts (agrupa várias atividades)
+    bookings: number; // agendamentos de atividades (1 por atividade)
     revenue: number;
     adults: number;
     children: number;
@@ -18,7 +19,7 @@ export interface AnalyticsSummary {
     used: number;
     pending: number;
   };
-  byHotel: { hotelId: string; name: string; bookings: number; revenue: number }[];
+  byHotel: { hotelId: string; name: string; orders: number; bookings: number; revenue: number }[];
   byCategory: { category: Category; bookings: number; revenue: number; participants: number }[];
   topActivities: { activityName: string; hotelName: string; bookings: number; participants: number; revenue: number }[];
   passaporteCross: { guestHotel: string; activityHotel: string; bookings: number; participants: number }[];

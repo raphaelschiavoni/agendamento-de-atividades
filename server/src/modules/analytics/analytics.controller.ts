@@ -26,10 +26,11 @@ export async function getSummary(req: Request, res: Response) {
   const { where, params } = buildFilter(req.query);
 
   const totals = await pool.query<{
-    bookings: string; revenue: string; adults: string; children: string;
+    orders: string; bookings: string; revenue: string; adults: string; children: string;
     participants: string; used: string; pending: string;
   }>(
     `SELECT
+       COUNT(DISTINCT b.payment_ref) AS orders,
        COUNT(*) AS bookings,
        COALESCE(SUM(b.total_cents),0) AS revenue,
        COALESCE(SUM(b.adults),0) AS adults,
@@ -41,8 +42,8 @@ export async function getSummary(req: Request, res: Response) {
     params
   );
 
-  const byHotel = await pool.query<{ hotel_id: string; name: string; bookings: string; revenue: string }>(
-    `SELECT b.hotel_id, b.hotel_name AS name, COUNT(*) AS bookings, COALESCE(SUM(b.total_cents),0) AS revenue
+  const byHotel = await pool.query<{ hotel_id: string; name: string; orders: string; bookings: string; revenue: string }>(
+    `SELECT b.hotel_id, b.hotel_name AS name, COUNT(DISTINCT b.payment_ref) AS orders, COUNT(*) AS bookings, COALESCE(SUM(b.total_cents),0) AS revenue
      FROM bookings b ${where}
      GROUP BY b.hotel_id, b.hotel_name
      ORDER BY revenue DESC, bookings DESC`,
@@ -84,6 +85,7 @@ export async function getSummary(req: Request, res: Response) {
 
   res.json({
     totals: {
+      orders: Number(totals.rows[0].orders),
       bookings: Number(totals.rows[0].bookings),
       revenue: Number(totals.rows[0].revenue) / 100,
       adults: Number(totals.rows[0].adults),
@@ -93,7 +95,7 @@ export async function getSummary(req: Request, res: Response) {
       pending: Number(totals.rows[0].pending),
     },
     byHotel: byHotel.rows.map((r) => ({
-      hotelId: r.hotel_id, name: r.name, bookings: Number(r.bookings), revenue: Number(r.revenue) / 100,
+      hotelId: r.hotel_id, name: r.name, orders: Number(r.orders), bookings: Number(r.bookings), revenue: Number(r.revenue) / 100,
     })),
     byCategory: byCategory.rows.map((r) => ({
       category: r.category, bookings: Number(r.bookings), revenue: Number(r.revenue) / 100, participants: Number(r.participants),

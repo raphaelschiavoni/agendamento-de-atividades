@@ -139,12 +139,16 @@ export function RelatoriosTab() {
 
         {summary && (
           <>
-            <div className="grid gap-3 mb-5" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(180px,1fr))" }}>
-              <StatCard label="Reservas" value={summary.totals.bookings} icon={Calendar} color="var(--moss)" />
+            <div className="grid gap-3 mb-2" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(170px,1fr))" }}>
+              <StatCard label="Pedidos (reservas)" value={summary.totals.orders} icon={FileText} color="var(--plum)" />
+              <StatCard label="Agendamentos de atividades" value={summary.totals.bookings} icon={Calendar} color="var(--moss)" />
               <StatCard label="Faturamento" value={formatBRL(summary.totals.revenue)} icon={TrendingUp} color="var(--gold)" />
               <StatCard label="Participantes" value={`${summary.totals.participants} (${summary.totals.adults}A/${summary.totals.children}C)`} icon={Users} color="var(--forest)" />
               <StatCard label="Vouchers usados / a usar" value={`${summary.totals.used} / ${summary.totals.pending}`} icon={Sparkles} color="var(--clay)" />
             </div>
+            <p className="text-xs opacity-60 mb-5">
+              Um <strong>pedido</strong> é cada reserva que o cliente fecha; nele pode agendar várias atividades. Por isso o total de <strong>agendamentos</strong> costuma ser maior que o de pedidos.
+            </p>
 
             <Panel title="Faturamento por hotel">
               <p className="text-xs opacity-60 mb-2">
@@ -162,14 +166,14 @@ export function RelatoriosTab() {
                 </ResponsiveContainer>
               </div>
               <SimpleTable
-                headers={["Hotel", "Reservas", "Faturamento"]}
-                rows={summary.byHotel.map((h) => [h.name, String(h.bookings), formatBRL(h.revenue)])}
+                headers={["Hotel", "Pedidos", "Agendamentos", "Faturamento"]}
+                rows={summary.byHotel.map((h) => [h.name, String(h.orders), String(h.bookings), formatBRL(h.revenue)])}
               />
             </Panel>
 
             <Panel title="Por categoria">
               <SimpleTable
-                headers={["Categoria", "Reservas", "Participantes", "Faturamento"]}
+                headers={["Categoria", "Agendamentos", "Participantes", "Faturamento"]}
                 rows={summary.byCategory.map((c) => [
                   CATEGORY_META[c.category]?.label ?? c.category, String(c.bookings), String(c.participants), formatBRL(c.revenue),
                 ])}
@@ -188,7 +192,7 @@ export function RelatoriosTab() {
 
             <Panel title="Atividades mais procuradas">
               <SimpleTable
-                headers={["Atividade", "Hotel", "Reservas", "Participantes", "Faturamento"]}
+                headers={["Atividade", "Hotel", "Agendamentos", "Participantes", "Faturamento"]}
                 rows={summary.topActivities.map((a) => [a.activityName, a.hotelName, String(a.bookings), String(a.participants), formatBRL(a.revenue)])}
               />
             </Panel>
