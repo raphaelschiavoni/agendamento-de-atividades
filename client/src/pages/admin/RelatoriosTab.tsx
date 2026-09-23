@@ -1,31 +1,56 @@
 import { useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { Calendar, Download, FileText, Sparkles, TrendingUp, Users } from "lucide-react";
+import { Calendar, Download, FileText, Loader2, Sparkles, TrendingUp, Users } from "lucide-react";
 import { listHotelsAdmin } from "../../api/hotels";
 import { getAnalyticsSummary, getAnalyticsCustomers, type AnalyticsFilters } from "../../api/analytics";
 import { StatCard } from "../../components/StatCard";
 import { CATEGORY_META, CATEGORY_ORDER } from "../../lib/constants";
-import { formatBRL } from "../../lib/format";
+import { formatBRL, isoDate } from "../../lib/format";
 import { downloadCSV } from "../../lib/export";
 
+// Períodos rápidos (datas no fuso local = Brasília).
+function periodoMes(): { from: string; to: string } {
+  const n = new Date();
+  return { from: `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-01`, to: isoDate(n) };
+}
+function periodoDias(dias: number): { from: string; to: string } {
+  const n = new Date();
+  const ini = new Date(n);
+  ini.setDate(n.getDate() - (dias - 1));
+  return { from: isoDate(ini), to: isoDate(n) };
+}
+
 export function RelatoriosTab() {
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
+  const mes = periodoMes();
+  // Abre no mês atual (números do período, não o acumulado de todo o histórico).
+  const [from, setFrom] = useState(mes.from);
+  const [to, setTo] = useState(mes.to);
   const [hotelId, setHotelId] = useState("all");
   const [category, setCategory] = useState("all");
 
   const filters: AnalyticsFilters = { from, to, hotelId, category };
 
   const { data: hotels = [] } = useQuery({ queryKey: ["hotels-admin"], queryFn: listHotelsAdmin });
-  const { data: summary } = useQuery({
+  const { data: summary, isFetching: fetchingSummary } = useQuery({
     queryKey: ["analytics-summary", from, to, hotelId, category],
     queryFn: () => getAnalyticsSummary(filters),
   });
-  const { data: customers = [] } = useQuery({
+  const { data: customers = [], isFetching: fetchingCustomers } = useQuery({
     queryKey: ["analytics-customers", from, to, hotelId, category],
     queryFn: () => getAnalyticsCustomers(filters),
   });
+  const atualizando = fetchingSummary || fetchingCustomers;
+
+  const hoje = isoDate(new Date());
+  const periodos: { label: string; range: { from: string; to: string } }[] = [
+    { label: "Hoje", range: { from: hoje, to: hoje } },
+    { label: "Este mês", range: periodoMes() },
+    { label: "Últimos 30 dias", range: periodoDias(30) },
+    { label: "Tudo", range: { from: "", to: "" } },
+  ];
+  function aplicarPeriodo(r: { from: string; to: string }) { setFrom(r.from); setTo(r.to); }
+  const periodoAtivo = (r: { from: string; to: string }) => r.from === from && r.to === to;
 
   const periodoLabel = from || to ? `${from || "início"} até ${to || "hoje"}` : "todo o período";
 
@@ -48,6 +73,29 @@ export function RelatoriosTab() {
 
   return (
     <div>
+      {/* atalhos de período */}
+      <div className="no-print flex flex-wrap items-center gap-2 mb-3">
+        {periodos.map((p) => (
+          <button
+            key={p.label}
+            onClick={() => aplicarPeriodo(p.range)}
+            className="px-2.5 py-1 rounded-full text-xs"
+            style={{
+              background: periodoAtivo(p.range) ? "var(--forest)" : "var(--paper)",
+              color: periodoAtivo(p.range) ? "var(--paper)" : "var(--bark)",
+              border: "1px solid var(--line)",
+            }}
+          >
+            {p.label}
+          </button>
+        ))}
+        {atualizando && (
+          <span className="flex items-center gap-1 text-xs opacity-70" style={{ color: "var(--forest)" }}>
+            <Loader2 size={13} className="animate-spin" /> Atualizando…
+          </span>
+        )}
+      </div>
+
       {/* filtros — ocultos na impressão */}
       <div className="no-print flex flex-wrap items-end gap-3 mb-5">
         <div>
@@ -99,6 +147,9 @@ export function RelatoriosTab() {
             </div>
 
             <Panel title="Faturamento por hotel">
+              <p className="text-xs opacity-60 mb-2">
+                Atividades "Incluso" (gratuitas para o hóspede) contam como R$ 0 — por isso um hotel pode ter muitas reservas e pouco faturamento.
+              </p>
               <div style={{ width: "100%", height: 240 }}>
                 <ResponsiveContainer>
                   <BarChart data={byHotelChart}>
