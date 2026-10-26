@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import { HttpError } from "../../middleware/error-handler.js";
 import * as hotelsRepo from "./hotels.repository.js";
 import { listActivitiesForHotel } from "../activities/activities.repository.js";
+import { recordAudit } from "../audit/audit.service.js";
 
 export async function listHotels(_req: Request, res: Response) {
   const hotels = await hotelsRepo.listHotels(false);
@@ -31,5 +32,9 @@ export async function listHotelsAdmin(_req: Request, res: Response) {
 export async function updateHotelAdmin(req: Request, res: Response) {
   const updated = await hotelsRepo.updateHotel(req.params.id, req.body);
   if (!updated) throw new HttpError(404, "Hotel não encontrado");
+  await recordAudit(req, {
+    action: "hotel.update", entityType: "hotel", entityId: updated.id, hotelId: updated.id,
+    summary: `Editou as configurações do hotel ${updated.name}`,
+  });
   res.json(updated);
 }

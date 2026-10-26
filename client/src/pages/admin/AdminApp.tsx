@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BarChart3, Building2, CalendarCheck, MessageCircle, Ticket, TrendingUp, Users } from "lucide-react";
+import { BarChart3, Building2, CalendarCheck, MessageCircle, ScrollText, Ticket, TrendingUp, Users } from "lucide-react";
 import { DashboardTab } from "./DashboardTab";
 import { CatalogTab } from "./CatalogTab";
 import { VendasTab } from "./VendasTab";
@@ -7,9 +7,10 @@ import { WhatsappTab } from "./WhatsappTab";
 import { RelatoriosTab } from "./RelatoriosTab";
 import { AgendamentoTab } from "./AgendamentoTab";
 import { UsuariosTab } from "./UsuariosTab";
+import { LogsTab } from "./LogsTab";
 import type { AdminUser } from "../../types";
 
-type TabId = "dashboard" | "relatorios" | "catalogo" | "vendas" | "agendamento" | "whatsapp" | "usuarios";
+type TabId = "dashboard" | "relatorios" | "catalogo" | "vendas" | "agendamento" | "whatsapp" | "usuarios" | "logs";
 
 const ALL_TABS: { id: TabId; label: string; icon: typeof TrendingUp; roles: ("admin" | "agendamento")[] }[] = [
   { id: "dashboard", label: "Dashboard", icon: TrendingUp, roles: ["admin"] },
@@ -18,6 +19,7 @@ const ALL_TABS: { id: TabId; label: string; icon: typeof TrendingUp; roles: ("ad
   { id: "vendas", label: "Vendas & Vouchers", icon: Ticket, roles: ["admin", "agendamento"] },
   { id: "agendamento", label: "Sala de Agendamento", icon: CalendarCheck, roles: ["admin", "agendamento"] },
   { id: "whatsapp", label: "WhatsApp", icon: MessageCircle, roles: ["admin", "agendamento"] },
+  { id: "logs", label: "Logs", icon: ScrollText, roles: ["admin", "agendamento"] },
   { id: "usuarios", label: "Usuários", icon: Users, roles: ["admin"] },
 ];
 
@@ -51,6 +53,7 @@ export function AdminApp({ user }: { user: AdminUser }) {
       {tab === "vendas" && <VendasTab user={user} />}
       {tab === "agendamento" && <AgendamentoTab user={user} />}
       {tab === "whatsapp" && <WhatsappTab user={user} />}
+      {tab === "logs" && <LogsTab user={user} />}
       {tab === "usuarios" && <UsuariosTab me={user} />}
     </div>
   );

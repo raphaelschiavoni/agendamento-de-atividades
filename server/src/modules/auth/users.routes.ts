@@ -2,6 +2,7 @@ import { Router } from "express";
 import { asyncRoute, HttpError } from "../../middleware/error-handler.js";
 import { requireAdmin, requireAdminRole } from "./auth.middleware.js";
 import * as authService from "./auth.service.js";
+import { recordAudit } from "../audit/audit.service.js";
 
 // Gestão de usuários do painel (apenas administrador pleno).
 export const adminUsersRouter = Router();
@@ -23,6 +24,10 @@ adminUsersRouter.post(
     // Sala de Agendamento pode ser vinculada a 1 hotel (vê só o dele) ou a nenhum (vê todos).
     const user = await authService.createAdminUser(email, password, name, role ?? "agendamento", hotelId || null);
     if (!user) throw new HttpError(409, "Já existe um usuário com esse email");
+    await recordAudit(req, {
+      action: "user.create", entityType: "user", entityId: user.id, hotelId: user.hotelId,
+      summary: `Criou o usuário ${user.name} (${user.email}) — ${user.role}`,
+    });
     res.status(201).json(user);
   })
 );
@@ -31,8 +36,13 @@ adminUsersRouter.delete(
   "/:id",
   asyncRoute(async (req, res) => {
     if (req.params.id === req.adminUser!.id) throw new HttpError(400, "Você não pode excluir o próprio usuário");
+    const alvo = (await authService.listAdminUsers()).find((u) => u.id === req.params.id);
     const ok = await authService.deleteAdminUser(req.params.id);
     if (!ok) throw new HttpError(404, "Usuário não encontrado");
+    await recordAudit(req, {
+      action: "user.delete", entityType: "user", entityId: req.params.id, hotelId: alvo?.hotelId ?? null,
+      summary: `Excluiu o usuário ${alvo?.name ?? req.params.id}${alvo ? ` (${alvo.email})` : ""}`,
+    });
     res.status(204).send();
   })
 );
