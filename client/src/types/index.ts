@@ -101,14 +101,19 @@ export interface SlotAvailability {
   capacity: number;
 }
 
-export type AdminRole = "admin" | "agendamento";
+export type AdminRole = "admin" | "hotel_admin" | "agendamento";
 
 export interface AdminUser {
   id: string;
   email: string;
   name: string;
   role: AdminRole;
-  hotelId: string | null; // hotel vinculado (Sala de Agendamento); null = todos
+  hotelId: string | null; // hotel vinculado (hotel_admin / Sala de Agendamento); null = rede inteira
+}
+
+/** Hotel ao qual o usuário está travado (null = master, vê a rede inteira). */
+export function scopedHotelId(user: AdminUser): string | null {
+  return user.role === "admin" ? null : user.hotelId;
 }
 
 export interface WhatsappLogEntry {

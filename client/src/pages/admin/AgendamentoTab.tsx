@@ -6,7 +6,7 @@ import { approveBookingAdmin, listBookingsAdmin } from "../../api/bookings";
 import { CATEGORY_META } from "../../lib/constants";
 import { formatBRL } from "../../lib/format";
 import { whenText } from "../../lib/schedule";
-import type { AdminUser, Booking } from "../../types";
+import { scopedHotelId, type AdminUser, type Booking } from "../../types";
 
 // Semáforo de lotação do horário: verde = vazio, amarelo = tem vaga, vermelho = esgotado.
 function occupancy(b: Booking): { color: string; bg: string; label: string } | null {
@@ -23,7 +23,7 @@ function occupancy(b: Booking): { color: string; bg: string; label: string } | n
 // Fila da Sala de Agendamento: reservas aguardando validação.
 // Ao aprovar, o resumo é disparado no WhatsApp da recepção do hotel.
 export function AgendamentoTab({ user }: { user: AdminUser }) {
-  const lockedHotel = user.role === "agendamento" ? user.hotelId : null;
+  const lockedHotel = scopedHotelId(user);
   const [filterHotel, setFilterHotel] = useState<string>(lockedHotel ?? "all");
   const [filterActivity, setFilterActivity] = useState<string>("all");
   const queryClient = useQueryClient();

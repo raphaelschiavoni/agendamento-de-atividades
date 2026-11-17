@@ -1,5 +1,12 @@
 import type { Request, Response } from "express";
 import { pool } from "../../db/pool.js";
+import { scopedHotelId } from "../auth/auth.service.js";
+
+/** Força o filtro ao hotel do usuário quando ele é administrador de 1 hotel. */
+function scopedQuery(req: Request): Request["query"] {
+  const scoped = scopedHotelId(req.adminUser!);
+  return scoped ? { ...req.query, hotelId: scoped } : req.query;
+}
 
 // Monta o filtro compartilhado (período por data da atividade, hotel, categoria).
 // Considera apenas reservas efetivas (não canceladas), salvo quando indicado.
@@ -23,7 +30,7 @@ function buildFilter(query: Request["query"], startIndex = 1) {
 }
 
 export async function getSummary(req: Request, res: Response) {
-  const { where, params } = buildFilter(req.query);
+  const { where, params } = buildFilter(scopedQuery(req));
 
   const totals = await pool.query<{
     orders: string; bookings: string; revenue: string; adults: string; children: string;
@@ -111,7 +118,7 @@ export async function getSummary(req: Request, res: Response) {
 }
 
 export async function getCustomers(req: Request, res: Response) {
-  const { where, params } = buildFilter(req.query);
+  const { where, params } = buildFilter(scopedQuery(req));
 
   // Agrupa por telefone (identificador do cliente); nome/email = os mais recentes.
   const { rows } = await pool.query<{

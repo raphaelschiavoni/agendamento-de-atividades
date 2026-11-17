@@ -9,10 +9,10 @@ import { OccupancyBoard } from "./OccupancyBoard";
 import { CATEGORY_META } from "../../lib/constants";
 import { formatBRL, isoDate } from "../../lib/format";
 import { whenText } from "../../lib/schedule";
-import type { AdminUser, Booking } from "../../types";
+import { scopedHotelId, type AdminUser, type Booking } from "../../types";
 
 export function VendasTab({ user }: { user: AdminUser }) {
-  const lockedHotel = user.role === "agendamento" ? user.hotelId : null;
+  const lockedHotel = scopedHotelId(user);
   const [view, setView] = useState<"lista" | "ocupacao">("lista");
   const [filterHotel, setFilterHotel] = useState(lockedHotel ?? "all");
   const [filterStatus, setFilterStatus] = useState<ListBookingsFilters["status"]>("all");

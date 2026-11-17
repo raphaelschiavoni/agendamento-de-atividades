@@ -1,14 +1,23 @@
 import bcrypt from "bcrypt";
 import { pool } from "../../db/pool.js";
 
-export type AdminRole = "admin" | "agendamento";
+// admin       = administrador master (rede inteira, único que mexe em usuários)
+// hotel_admin = administrador de 1 hotel (edita atividades/vagas/relatórios só do seu hotel)
+// agendamento = sala de agendamento (operação: aprova/edita reservas do seu hotel)
+export type AdminRole = "admin" | "hotel_admin" | "agendamento";
 
 export interface AdminUser {
   id: string;
   email: string;
   name: string;
   role: AdminRole;
-  hotelId: string | null; // hotel vinculado (Sala de Agendamento); null = todos
+  hotelId: string | null; // hotel vinculado (hotel_admin / Sala de Agendamento); null = rede inteira
+}
+
+/** Hotel ao qual o usuário está travado. Master (admin) = null (vê todos);
+ *  qualquer outro papel fica restrito ao próprio hotel quando vinculado. */
+export function scopedHotelId(user: AdminUser): string | null {
+  return user.role === "admin" ? null : user.hotelId;
 }
 
 interface AdminUserRow {

@@ -1,18 +1,18 @@
 import { Router } from "express";
 import { asyncRoute } from "../../middleware/error-handler.js";
 import { requireAdmin } from "../auth/auth.middleware.js";
+import { scopedHotelId } from "../auth/auth.service.js";
 import { listAudit } from "./audit.service.js";
 
-// Página de Logs. ADM vê tudo (pode filtrar por hotel); Sala de Agendamento
-// vê apenas os registros do próprio hotel.
+// Página de Logs. Master vê tudo (pode filtrar por hotel); usuário travado em 1 hotel
+// (admin de hotel ou sala) vê apenas os registros do próprio hotel.
 export const adminAuditRouter = Router();
 adminAuditRouter.use(requireAdmin);
 adminAuditRouter.get(
   "/",
   asyncRoute(async (req, res) => {
-    const u = req.adminUser!;
     const requested = typeof req.query.hotelId === "string" && req.query.hotelId !== "all" ? req.query.hotelId : undefined;
-    const hotelId = u.role === "agendamento" && u.hotelId ? u.hotelId : requested;
+    const hotelId = scopedHotelId(req.adminUser!) ?? requested;
     res.json(
       await listAudit({
         hotelId,

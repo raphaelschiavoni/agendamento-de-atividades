@@ -20,9 +20,13 @@ adminUsersRouter.post(
   asyncRoute(async (req, res) => {
     const { email, password, name, role, hotelId } = req.body ?? {};
     if (!email || !password || !name) throw new HttpError(400, "Informe nome, email e senha");
-    if (role && role !== "admin" && role !== "agendamento") throw new HttpError(400, "Papel inválido");
-    // Sala de Agendamento pode ser vinculada a 1 hotel (vê só o dele) ou a nenhum (vê todos).
-    const user = await authService.createAdminUser(email, password, name, role ?? "agendamento", hotelId || null);
+    if (role && role !== "admin" && role !== "hotel_admin" && role !== "agendamento") throw new HttpError(400, "Papel inválido");
+    const finalRole = role ?? "agendamento";
+    // Master não fica preso a hotel. Admin de hotel e Sala de Agendamento vinculam-se a 1 hotel
+    // (Sala pode ficar sem vínculo = rede inteira); o admin de hotel exige um hotel.
+    const finalHotelId = finalRole === "admin" ? null : (hotelId || null);
+    if (finalRole === "hotel_admin" && !finalHotelId) throw new HttpError(400, "Selecione o hotel deste administrador");
+    const user = await authService.createAdminUser(email, password, name, finalRole, finalHotelId);
     if (!user) throw new HttpError(409, "Já existe um usuário com esse email");
     await recordAudit(req, {
       action: "user.create", entityType: "user", entityId: user.id, hotelId: user.hotelId,

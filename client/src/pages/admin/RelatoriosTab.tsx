@@ -8,6 +8,7 @@ import { StatCard } from "../../components/StatCard";
 import { CATEGORY_META, CATEGORY_ORDER } from "../../lib/constants";
 import { formatBRL, isoDate } from "../../lib/format";
 import { downloadCSV } from "../../lib/export";
+import { scopedHotelId, type AdminUser } from "../../types";
 
 // Períodos rápidos (datas no fuso local = Brasília).
 function periodoMes(): { from: string; to: string } {
@@ -21,12 +22,14 @@ function periodoDias(dias: number): { from: string; to: string } {
   return { from: isoDate(ini), to: isoDate(n) };
 }
 
-export function RelatoriosTab() {
+export function RelatoriosTab({ user }: { user: AdminUser }) {
   const mes = periodoMes();
   // Abre no mês atual (números do período, não o acumulado de todo o histórico).
   const [from, setFrom] = useState(mes.from);
   const [to, setTo] = useState(mes.to);
-  const [hotelId, setHotelId] = useState("all");
+  // Administrador de hotel fica travado no próprio hotel (sem opção "todos").
+  const scoped = scopedHotelId(user);
+  const [hotelId, setHotelId] = useState(scoped ?? "all");
   const [category, setCategory] = useState("all");
 
   const filters: AnalyticsFilters = { from, to, hotelId, category };
@@ -106,13 +109,15 @@ export function RelatoriosTab() {
           <label className="text-xs opacity-70 block mb-1">Até</label>
           <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="rounded-md px-2 py-1.5 text-sm" style={{ border: "1px solid var(--line)", background: "var(--paper)" }} />
         </div>
-        <div>
-          <label className="text-xs opacity-70 block mb-1">Hotel</label>
-          <select value={hotelId} onChange={(e) => setHotelId(e.target.value)} className="rounded-md px-2 py-1.5 text-sm" style={{ border: "1px solid var(--line)", background: "var(--paper)" }}>
-            <option value="all">Todos os hotéis</option>
-            {hotels.map((h) => <option key={h.id} value={h.id}>{h.name}</option>)}
-          </select>
-        </div>
+        {!scoped && (
+          <div>
+            <label className="text-xs opacity-70 block mb-1">Hotel</label>
+            <select value={hotelId} onChange={(e) => setHotelId(e.target.value)} className="rounded-md px-2 py-1.5 text-sm" style={{ border: "1px solid var(--line)", background: "var(--paper)" }}>
+              <option value="all">Todos os hotéis</option>
+              {hotels.map((h) => <option key={h.id} value={h.id}>{h.name}</option>)}
+            </select>
+          </div>
+        )}
         <div>
           <label className="text-xs opacity-70 block mb-1">Categoria</label>
           <select value={category} onChange={(e) => setCategory(e.target.value)} className="rounded-md px-2 py-1.5 text-sm" style={{ border: "1px solid var(--line)", background: "var(--paper)" }}>

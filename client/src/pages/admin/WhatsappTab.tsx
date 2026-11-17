@@ -3,10 +3,10 @@ import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle } from "lucide-react";
 import { listWhatsappLog } from "../../api/dashboard";
 import { listHotelsAdmin } from "../../api/hotels";
-import type { AdminUser } from "../../types";
+import { scopedHotelId, type AdminUser } from "../../types";
 
 export function WhatsappTab({ user }: { user: AdminUser }) {
-  const lockedHotel = user.role === "agendamento" ? user.hotelId : null;
+  const lockedHotel = scopedHotelId(user);
   const [filterHotel, setFilterHotel] = useState<string>(lockedHotel ?? "all");
 
   const { data: hotels = [] } = useQuery({ queryKey: ["hotels-admin"], queryFn: listHotelsAdmin });

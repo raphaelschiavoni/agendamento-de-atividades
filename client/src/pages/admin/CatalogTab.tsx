@@ -13,13 +13,16 @@ import { CATEGORY_META, CATEGORY_ORDER } from "../../lib/constants";
 import { formatBRL } from "../../lib/format";
 import { ActivityEditor } from "./ActivityEditor";
 import { HotelEditor } from "./HotelEditor";
-import type { Activity, Category, Hotel } from "../../types";
+import { scopedHotelId, type Activity, type AdminUser, type Category, type Hotel } from "../../types";
 
-export function CatalogTab() {
+export function CatalogTab({ user }: { user: AdminUser }) {
   const queryClient = useQueryClient();
-  const { data: hotels = [] } = useQuery({ queryKey: ["hotels-admin"], queryFn: listHotelsAdmin });
+  const { data: allHotels = [] } = useQuery({ queryKey: ["hotels-admin"], queryFn: listHotelsAdmin });
+  // Administrador de hotel só enxerga (e edita) o próprio hotel.
+  const scoped = scopedHotelId(user);
+  const hotels = scoped ? allHotels.filter((h) => h.id === scoped) : allHotels;
   const [hotelId, setHotelId] = useState<string | undefined>(undefined);
-  const activeHotelId = hotelId ?? hotels[0]?.id;
+  const activeHotelId = scoped ?? hotelId ?? hotels[0]?.id;
 
   const { data: activities = [] } = useQuery({
     queryKey: ["activities-admin", activeHotelId],
@@ -64,7 +67,7 @@ export function CatalogTab() {
 
   return (
     <div>
-      <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
+      <div className="flex gap-2 mb-4 overflow-x-auto pb-1" style={{ display: hotels.length <= 1 ? "none" : undefined }}>
         {hotels.map((h) => (
           <button
             key={h.id}

@@ -3,6 +3,7 @@ import { HttpError } from "../../middleware/error-handler.js";
 import * as service from "./bookings.service.js";
 import * as repo from "./bookings.repository.js";
 import { recordAudit } from "../audit/audit.service.js";
+import { scopedHotelId } from "../auth/auth.service.js";
 
 function bookingLabel(b: { voucherCode: string; activityName: string; date: string; time: string }): string {
   return `${b.voucherCode} — ${b.activityName} (${b.date} ${b.time})`;
@@ -33,20 +34,18 @@ export async function getVoucher(req: Request, res: Response) {
 
 // ---- admin / sala de agendamento ----
 
-/** Sala de Agendamento enxerga apenas o hotel vinculado; ADM enxerga todos. */
+/** Usuário vinculado a 1 hotel (admin de hotel ou sala) só enxerga esse hotel; master vê todos. */
 function effectiveHotelFilter(req: Request, requested?: string): string | undefined {
-  const user = req.adminUser!;
-  if (user.role === "agendamento" && user.hotelId) return user.hotelId;
-  return requested;
+  return scopedHotelId(req.adminUser!) ?? requested;
 }
 
-/** Garante que usuário de agendamento só atue em reservas do próprio hotel. */
+/** Garante que usuário travado em 1 hotel só atue em reservas do próprio hotel. */
 async function assertBookingAccess(req: Request, bookingId: string) {
-  const user = req.adminUser!;
-  if (user.role !== "agendamento" || !user.hotelId) return;
+  const scoped = scopedHotelId(req.adminUser!);
+  if (!scoped) return;
   const booking = await repo.getBookingById(bookingId);
   if (!booking) throw new HttpError(404, "Reserva não encontrada");
-  if (booking.hotel_id !== user.hotelId) {
+  if (booking.hotel_id !== scoped) {
     throw new HttpError(403, "Esta reserva pertence a outro hotel");
   }
 }

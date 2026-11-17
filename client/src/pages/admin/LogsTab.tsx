@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Search, ShieldCheck } from "lucide-react";
 import { listHotelsAdmin } from "../../api/hotels";
 import { listAuditLogs, type AuditLog } from "../../api/audit";
-import type { AdminUser } from "../../types";
+import { scopedHotelId, type AdminUser } from "../../types";
 
 // Rótulos amigáveis das ações registradas.
 const ACTION_LABELS: Record<string, string> = {
@@ -38,7 +38,7 @@ function actionColor(action: string): string {
 }
 
 export function LogsTab({ user }: { user: AdminUser }) {
-  const lockedHotel = user.role === "agendamento" ? user.hotelId : null;
+  const lockedHotel = scopedHotelId(user);
   const [hotelId, setHotelId] = useState(lockedHotel ?? "all");
   const [action, setAction] = useState("all");
   const [search, setSearch] = useState("");

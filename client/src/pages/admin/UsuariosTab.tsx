@@ -19,8 +19,10 @@ export function UsuariosTab({ me }: { me: AdminUser }) {
   const [hotelId, setHotelId] = useState("");
   const [error, setError] = useState<string | null>(null);
 
+  // Master não fica preso a hotel; os demais papéis vinculam-se a um hotel.
+  const needsHotel = role !== "admin";
   const createMutation = useMutation({
-    mutationFn: () => createUser({ name, email, password, role, hotelId: role === "agendamento" ? (hotelId || null) : null }),
+    mutationFn: () => createUser({ name, email, password, role, hotelId: needsHotel ? (hotelId || null) : null }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
       setName(""); setEmail(""); setPassword(""); setHotelId(""); setError(null);
@@ -34,7 +36,8 @@ export function UsuariosTab({ me }: { me: AdminUser }) {
   });
 
   const hotelName = (id: string | null) => hotels.find((h) => h.id === id)?.name ?? "—";
-  const valid = name.trim() && email.trim() && password.length >= 6;
+  // Admin de hotel exige um hotel selecionado; sala pode ficar "todos".
+  const valid = Boolean(name.trim() && email.trim() && password.length >= 6 && (role !== "hotel_admin" || hotelId));
 
   return (
     <div className="grid gap-5" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))" }}>
@@ -55,25 +58,29 @@ export function UsuariosTab({ me }: { me: AdminUser }) {
               style={{ border: "1px solid var(--line)", background: "var(--paper)" }}
             >
               <option value="agendamento">Sala de Agendamento (aprova reservas do seu hotel)</option>
-              <option value="admin">Administrador (acesso total)</option>
+              <option value="hotel_admin">Administrador do Hotel (gerencia só o hotel dele)</option>
+              <option value="admin">Administrador Master (rede inteira)</option>
             </select>
           </div>
-          {role === "agendamento" && (
+          {needsHotel && (
             <div>
-              <label className="text-xs font-medium opacity-70 block mb-1">O que este acesso enxerga</label>
+              <label className="text-xs font-medium opacity-70 block mb-1">Hotel deste acesso</label>
               <select
                 value={hotelId}
                 onChange={(e) => setHotelId(e.target.value)}
                 className="w-full rounded-md px-3 py-2 text-sm"
                 style={{ border: "1px solid var(--line)", background: "var(--paper)" }}
               >
-                <option value="">Todos os hotéis (rede inteira)</option>
+                {/* Admin de hotel precisa escolher 1 hotel; sala pode ficar na rede inteira. */}
+                <option value="">{role === "hotel_admin" ? "— escolha o hotel —" : "Todos os hotéis (rede inteira)"}</option>
                 {hotels.map((h) => <option key={h.id} value={h.id}>Somente {h.name}</option>)}
               </select>
               <p className="text-xs opacity-50 mt-1">
-                {hotelId
-                  ? "Verá e aprovará apenas as reservas deste hotel."
-                  : "Verá e aprovará as reservas de todos os hotéis, com filtro por hotel."}
+                {role === "hotel_admin"
+                  ? "Edita atividades, vagas e relatórios apenas deste hotel. Não vê nem altera os outros hotéis."
+                  : hotelId
+                    ? "Verá e aprovará apenas as reservas deste hotel."
+                    : "Verá e aprovará as reservas de todos os hotéis, com filtro por hotel."}
               </p>
             </div>
           )}
@@ -97,10 +104,17 @@ export function UsuariosTab({ me }: { me: AdminUser }) {
               <div>
                 <div className="text-sm font-medium flex items-center gap-1.5" style={{ color: "var(--forest)" }}>
                   {u.role === "admin" && <Shield size={13} color="var(--gold)" />}
+                  {u.role === "hotel_admin" && <Shield size={13} color="var(--moss)" />}
                   {u.name} {u.id === me.id && <span className="text-xs opacity-50">(você)</span>}
                 </div>
                 <div className="text-xs opacity-60">
-                  {u.email} · {u.role === "admin" ? "Administrador" : `Sala de Agendamento — ${u.hotelId ? hotelName(u.hotelId) : "Todos os hotéis"}`}
+                  {u.email} · {
+                    u.role === "admin"
+                      ? "Administrador Master"
+                      : u.role === "hotel_admin"
+                        ? `Administrador do Hotel — ${hotelName(u.hotelId)}`
+                        : `Sala de Agendamento — ${u.hotelId ? hotelName(u.hotelId) : "Todos os hotéis"}`
+                  }
                 </div>
               </div>
               {u.id !== me.id && (
