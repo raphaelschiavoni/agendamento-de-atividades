@@ -79,6 +79,29 @@ export async function createAdminUser(
   return rows[0] ? toUser(rows[0]) : null;
 }
 
+/** Atualiza campos de um usuário do painel (parcial). Só mexe no que vier definido.
+ *  Lança erro Postgres 23505 se o novo email já existir (tratado na rota como 409). */
+export async function updateAdminUser(
+  id: string,
+  fields: { email?: string; name?: string; password?: string; role?: AdminRole; hotelId?: string | null }
+): Promise<AdminUser | null> {
+  const sets: string[] = [];
+  const vals: unknown[] = [];
+  let i = 1;
+  if (fields.email !== undefined) { sets.push(`email = $${i++}`); vals.push(fields.email.toLowerCase()); }
+  if (fields.name !== undefined) { sets.push(`name = $${i++}`); vals.push(fields.name); }
+  if (fields.role !== undefined) { sets.push(`role = $${i++}`); vals.push(fields.role); }
+  if (fields.hotelId !== undefined) { sets.push(`hotel_id = $${i++}`); vals.push(fields.hotelId); }
+  if (fields.password !== undefined) { sets.push(`password_hash = $${i++}`); vals.push(await hashPassword(fields.password)); }
+  if (sets.length === 0) return getAdminUserById(id);
+  vals.push(id);
+  const { rows } = await pool.query<AdminUserRow>(
+    `UPDATE admin_users SET ${sets.join(", ")} WHERE id = $${i} RETURNING ${SELECT}`,
+    vals
+  );
+  return rows[0] ? toUser(rows[0]) : null;
+}
+
 export async function deleteAdminUser(id: string): Promise<boolean> {
   const { rowCount } = await pool.query("DELETE FROM admin_users WHERE id = $1", [id]);
   return (rowCount ?? 0) > 0;
