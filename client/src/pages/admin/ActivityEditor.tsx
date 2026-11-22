@@ -92,6 +92,8 @@ export function ActivityEditor({
     const weekdayNums = Object.keys(weekdays).map(Number).sort((a, b) => a - b);
 
     // Atividade dia todo: sem agenda de horários; usa dailyCapacity como total/dia.
+    // As vagas por categoria (0 = some da categoria / número = teto por categoria)
+    // valem também no dia todo, então preservamos form.categoryCapacities (via ...form).
     if (form.allDay) {
       onSave({
         ...form,
@@ -101,7 +103,6 @@ export function ActivityEditor({
         weekdays: [],
         allowedDates: [],
         weekdayCapacities: {},
-        categoryCapacities: {},
       });
       return;
     }
